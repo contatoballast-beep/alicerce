@@ -1,5 +1,5 @@
 import React from 'react';
-import { ShieldCheck, FileCheck, CheckCircle2, QrCode } from 'lucide-react';
+import { ShieldCheck, FileCheck, CheckCircle2 } from 'lucide-react';
 import { TechnicalStamp } from '../types';
 
 interface CarimboTecnicoProps {
@@ -9,77 +9,70 @@ interface CarimboTecnicoProps {
 }
 
 export const CarimboTecnico: React.FC<CarimboTecnicoProps> = ({ stamp, authorRole, compact = false }) => {
-  const isTerracotta = authorRole === 'empresa_cnpj' || authorRole === 'investidor';
+  const isAccent = authorRole === 'empresa_cnpj' || authorRole === 'investidor';
 
   if (compact) {
     return (
-      <div className={`carimbo-tecnico ${isTerracotta ? 'carimbo-tecnico-accent' : ''} style-compact`}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <ShieldCheck size={16} color={isTerracotta ? '#B5654A' : '#539DC4'} />
-            <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-main)' }}>
-              {stamp.registrationNumber}
-            </span>
-          </div>
-          <span className={`stamp-badge ${isTerracotta ? 'terracotta' : ''}`}>
-            REGISTRO VALIDADE OK
-          </span>
+      <div className="titleblock" style={{ borderRadius: '3px', overflow: 'hidden', border: '1px solid var(--steel-line)' }}>
+        <div className="tb-field">
+          <div className="tb-label">Chancela</div>
+          <div className="tb-value">{stamp.stampId}</div>
+        </div>
+        <div className="tb-field">
+          <div className="tb-label">Registro</div>
+          <div className="tb-value">{stamp.registrationNumber}</div>
+        </div>
+        <div className="tb-field">
+          <div className="tb-label">Status</div>
+          <div className="tb-value" style={{ color: 'var(--accent)' }}>VALIDADO</div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className={`carimbo-tecnico ${isTerracotta ? 'carimbo-tecnico-accent' : ''}`}>
-      {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <ShieldCheck size={20} color={isTerracotta ? '#B5654A' : '#539DC4'} />
-          <span style={{ fontSize: '0.85rem', fontWeight: 700, letterSpacing: '0.05em', color: 'var(--text-heading)' }}>
-            CHANCELA TÉCNICA VERIFICADA
+    <div style={{ background: 'var(--white)', border: '1px solid var(--steel-line)', borderRadius: '4px', overflow: 'hidden' }}>
+      
+      {/* Top Header */}
+      <div style={{ padding: '8px 12px', background: 'var(--paper)', borderBottom: '1px solid var(--steel-line)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <div style={{ width: '10px', height: '10px', border: '1.5px solid var(--accent)', transform: 'rotate(45deg)', flexShrink: 0 }} />
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: '10px', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--ink)', fontWeight: 600 }}>
+            CHANCELA TÉCNICA VERIFICADA — ALICERCE
           </span>
         </div>
-        <span className={`stamp-badge ${isTerracotta ? 'terracotta' : ''}`}>
-          <CheckCircle2 size={12} /> HASH AUTÊNTICO
+        <span className="stamp-badge">
+          <CheckCircle2 size={10} /> REGISTRO OK
         </span>
       </div>
 
-      {/* Grid Content */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '10px', fontSize: '0.78rem', marginTop: '6px' }}>
-        <div>
-          <span style={{ color: 'var(--text-muted)', display: 'block', fontSize: '0.7rem' }}>REGISTRO CONSELHO/CNPJ</span>
-          <strong style={{ color: isTerracotta ? '#B5654A' : '#539DC4', fontSize: '0.9rem' }}>{stamp.registrationNumber}</strong>
+      {/* Blueprint Titleblock Grid */}
+      <div className="titleblock">
+        <div className="tb-field">
+          <div className="tb-label">Nº Registro / CNPJ</div>
+          <div className="tb-value" style={{ color: 'var(--line)' }}>{stamp.registrationNumber}</div>
         </div>
 
         {stamp.artRrtCode && (
-          <div>
-            <span style={{ color: 'var(--text-muted)', display: 'block', fontSize: '0.7rem' }}>CÓDIGO ART / RRT</span>
-            <span style={{ color: 'var(--text-main)', fontWeight: 600 }}>{stamp.artRrtCode}</span>
+          <div className="tb-field">
+            <div className="tb-label">Código ART / RRT</div>
+            <div className="tb-value">{stamp.artRrtCode}</div>
           </div>
         )}
 
-        <div>
-          <span style={{ color: 'var(--text-muted)', display: 'block', fontSize: '0.7rem' }}>CHAVE HASH (SHA-256)</span>
-          <span style={{ color: 'var(--text-muted)', fontSize: '0.7rem', wordBreak: 'break-all' }}>
-            {stamp.hashVerification.substring(0, 16)}...
-          </span>
+        <div className="tb-field">
+          <div className="tb-label">Hash Autenticidade</div>
+          <div className="tb-value" style={{ fontSize: '9.5px', color: 'var(--steel)' }}>
+            {stamp.hashVerification.substring(0, 12)}...
+          </div>
         </div>
 
-        <div>
-          <span style={{ color: 'var(--text-muted)', display: 'block', fontSize: '0.7rem' }}>EMISSÃO CHANCELA</span>
-          <span style={{ color: 'var(--text-main)' }}>{stamp.issueDate}</span>
+        <div className="tb-field">
+          <div className="tb-label">Emissão</div>
+          <div className="tb-value">{stamp.issueDate}</div>
         </div>
       </div>
 
-      {/* Footer stamp notice */}
-      <div style={{ marginTop: '10px', paddingTop: '8px', borderTop: '1px dashed var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.7rem', color: 'var(--text-muted)' }}>
-        <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-          <FileCheck size={12} /> Validação oficial ativa em banco CREA/CAU/Receita
-        </span>
-        <span style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--color-primary)' }}>
-          <QrCode size={12} /> Ver de forma pública
-        </span>
-      </div>
     </div>
   );
 };

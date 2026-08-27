@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Modal } from '../../components/Modal';
 import { UserProfile, Opportunity } from '../../types';
-import { Send, DollarSign, Calendar, FileText, ShieldCheck } from 'lucide-react';
+import { Send } from 'lucide-react';
 
 interface ProposalModalProps {
   isOpen: boolean;
@@ -21,7 +21,6 @@ export const ProposalModal: React.FC<ProposalModalProps> = ({
   const [value, setValue] = useState('');
   const [deadlineDays, setDeadlineDays] = useState('');
   const [scopeDescription, setScopeDescription] = useState('');
-  const [attachment, setAttachment] = useState('');
 
   if (!opportunity) return null;
 
@@ -33,91 +32,46 @@ export const ProposalModal: React.FC<ProposalModalProps> = ({
       value: parseFloat(value),
       deadlineDays: parseInt(deadlineDays, 10),
       scopeDescription,
-      attachmentUrl: attachment || `Proposta_Tecnica_${currentUser.name.replace(/\s+/g, '')}.pdf`,
+      attachmentUrl: `Proposta_${currentUser.name.replace(/\s+/g, '')}.pdf`,
     });
 
     onClose();
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={`Enviar Proposta TÉCNICA — ${opportunity.title}`} maxWidth="650px">
-      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+    <Modal isOpen={isOpen} onClose={onClose} title="Enviar Proposta Técnica" maxWidth="500px">
+      <form onSubmit={handleSubmit} className="form-wrap" style={{ padding: 0 }}>
         
-        {/* Opportunity Card Summary */}
-        <div style={{ background: 'var(--bg-input)', padding: '12px 16px', borderRadius: 'var(--radius-md)', borderLeft: '3px solid var(--color-accent)' }}>
-          <div style={{ fontSize: '0.75rem', color: 'var(--color-accent)', fontWeight: 700, textTransform: 'uppercase' }}>
-            CONTRATANTE: {opportunity.ownerName}
+        <div className="titleblock" style={{ border: '1px solid var(--steel-line)', borderRadius: '3px' }}>
+          <div className="tb-field">
+            <div className="tb-label">Oportunidade</div>
+            <div className="tb-value">{opportunity.title.substring(0, 25)}...</div>
           </div>
-          <div style={{ fontWeight: 600, fontSize: '0.95rem', color: '#FFF' }}>{opportunity.title}</div>
-          <div className="mono" style={{ fontSize: '0.8rem', color: '#4ADE80', marginTop: '2px' }}>
-            Faixa Orçamentária: R$ {opportunity.budgetRange.min.toLocaleString('pt-BR')} - R$ {opportunity.budgetRange.max.toLocaleString('pt-BR')}
-          </div>
-        </div>
-
-        {/* Proposer Badge */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', background: 'rgba(83, 157, 196, 0.1)', padding: '10px', borderRadius: 'var(--radius-md)' }}>
-          <ShieldCheck size={20} color="var(--color-primary)" />
-          <div>
-            <div style={{ fontSize: '0.85rem', fontWeight: 600, color: '#FFF' }}>Proponente: {currentUser.name}</div>
-            <div className="mono" style={{ fontSize: '0.72rem', color: 'var(--color-primary)' }}>
-              CHANCELA: {currentUser.creaCauNumber || currentUser.cnpjNumber || 'CPF VERIFICADO'}
-            </div>
+          <div className="tb-field">
+            <div className="tb-label">Proponente</div>
+            <div className="tb-value">{currentUser.name}</div>
           </div>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-          <div>
-            <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '4px' }}>Valor da Proposta (R$) *</label>
-            <input 
-              type="number" 
-              className="input-field mono" 
-              placeholder="Ex: 58000" 
-              value={value} 
-              onChange={e => setValue(e.target.value)} 
-              required 
-            />
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+          <div className="field">
+            <label>Valor da Proposta (R$)</label>
+            <input type="number" className="mono" placeholder="58000" value={value} onChange={e => setValue(e.target.value)} required />
           </div>
-
-          <div>
-            <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '4px' }}>Prazo de Execução (Dias) *</label>
-            <input 
-              type="number" 
-              className="input-field mono" 
-              placeholder="Ex: 30" 
-              value={deadlineDays} 
-              onChange={e => setDeadlineDays(e.target.value)} 
-              required 
-            />
+          <div className="field">
+            <label>Prazo (Dias)</label>
+            <input type="number" className="mono" placeholder="30" value={deadlineDays} onChange={e => setDeadlineDays(e.target.value)} required />
           </div>
         </div>
 
-        <div>
-          <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '4px' }}>Memorial de Escopo & Metodologia *</label>
-          <textarea 
-            className="input-field" 
-            rows={4}
-            placeholder="Detalhe o escopo de serviços inclusos, softwares de modelagem (Revit/TQS/Eberick), entregáveis e garantia técnica..."
-            value={scopeDescription}
-            onChange={e => setScopeDescription(e.target.value)}
-            required
-          />
+        <div className="field">
+          <label>Memorial de Escopo e Metodologia</label>
+          <textarea placeholder="Detalhe os entregáveis, softwares de projeto (Revit/TQS) e garantias..." value={scopeDescription} onChange={e => setScopeDescription(e.target.value)} required />
         </div>
 
-        <div>
-          <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '4px' }}>Anexo da Proposta Completa (PDF/DWG)</label>
-          <input 
-            type="text" 
-            className="input-field mono" 
-            placeholder="Proposta_Tecnica_Completa.pdf" 
-            value={attachment}
-            onChange={e => setAttachment(e.target.value)}
-          />
-        </div>
-
-        <button type="submit" className="btn-accent" style={{ width: '100%', justifyContent: 'center', marginTop: '10px' }}>
-          <Send size={18} /> Submeter Proposta Orçamentária
+        <button type="submit" className="btn primary" style={{ width: '100%', justifyContent: 'center' }}>
+          <Send size={12} /> Submeter Proposta
         </button>
-
       </form>
     </Modal>
   );

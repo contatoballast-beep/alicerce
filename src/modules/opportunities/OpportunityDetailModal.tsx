@@ -1,7 +1,7 @@
 import React from 'react';
 import { Modal } from '../../components/Modal';
-import { Opportunity, Proposal, UserProfile } from '../../types';
-import { DollarSign, Calendar, MapPin, Send, CheckCircle2, FileText, UserCheck, ShieldCheck } from 'lucide-react';
+import { Opportunity, UserProfile } from '../../types';
+import { Send, FileText } from 'lucide-react';
 
 interface OpportunityDetailModalProps {
   isOpen: boolean;
@@ -18,100 +18,73 @@ export const OpportunityDetailModal: React.FC<OpportunityDetailModalProps> = ({
   opportunity,
   currentUser,
   onOpenSendProposal,
-  onAcceptProposal,
 }) => {
   if (!opportunity) return null;
 
+  const initials = opportunity.ownerName.substring(0, 2).toUpperCase();
+
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={opportunity.title} maxWidth="750px">
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+    <Modal isOpen={isOpen} onClose={onClose} title={opportunity.title} maxWidth="560px">
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
         
-        {/* Header Info */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px', background: 'var(--bg-input)', padding: '14px 18px', borderRadius: 'var(--radius-md)' }}>
-          <div>
-            <span className="stamp-badge terracotta">{opportunity.specialty}</span>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-muted)', fontSize: '0.85rem', marginTop: '6px' }}>
-              <MapPin size={16} /> {opportunity.location.city} - {opportunity.location.state}
+        {/* Detail Org Info */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '9px' }}>
+          <div className="avatar">{initials}</div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--ink)' }}>{opportunity.ownerName}</div>
+            <div className="mono" style={{ fontSize: '10px', color: 'var(--steel)' }}>{opportunity.location.city}, {opportunity.location.state}</div>
+          </div>
+          <span className="tag warn">{opportunity.specialty}</span>
+        </div>
+
+        {/* Text */}
+        <p style={{ fontSize: '12.5px', lineHeight: 1.6, color: 'var(--graphite)' }}>
+          {opportunity.description}
+        </p>
+
+        {/* Detail Table */}
+        <div className="titleblock" style={{ border: '1px solid var(--steel-line)', borderRadius: '3px' }}>
+          <div className="tb-field">
+            <div className="tb-label">Local</div>
+            <div className="tb-value">{opportunity.location.city}, {opportunity.location.state}</div>
+          </div>
+          <div className="tb-field">
+            <div className="tb-label">Remuneração</div>
+            <div className="tb-value" style={{ color: 'var(--line)' }}>
+              R$ {opportunity.budgetRange.min.toLocaleString('pt-BR')} – {opportunity.budgetRange.max.toLocaleString('pt-BR')}
             </div>
           </div>
-
-          <div style={{ textAlign: 'right' }}>
-            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Faixa Orçamentária</span>
-            <div className="mono" style={{ fontSize: '1.2rem', fontWeight: 800, color: '#4ADE80' }}>
-              R$ {opportunity.budgetRange.min.toLocaleString('pt-BR')} - R$ {opportunity.budgetRange.max.toLocaleString('pt-BR')}
-            </div>
+          <div className="tb-field">
+            <div className="tb-label">Propostas</div>
+            <div className="tb-value">{opportunity.proposalsCount} recebidas</div>
           </div>
         </div>
 
-        {/* Description */}
-        <div>
-          <h4 style={{ fontSize: '0.9rem', textTransform: 'uppercase', color: 'var(--color-primary)', marginBottom: '4px' }}>
-            Descrição Detalhada do Projeto
-          </h4>
-          <p style={{ color: 'var(--text-main)', fontSize: '0.92rem', lineHeight: 1.6 }}>
-            {opportunity.description}
-          </p>
-        </div>
-
-        {/* Received Proposals Section */}
-        <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '16px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-            <h4 style={{ fontSize: '1rem', fontWeight: 700, color: '#FFF' }}>
-              Propostas Técnicas Submetidas ({opportunity.proposals ? opportunity.proposals.length : 0})
-            </h4>
-            <button onClick={onOpenSendProposal} className="btn-accent" style={{ padding: '6px 14px', fontSize: '0.85rem' }}>
-              <Send size={14} /> Submeter Minha Proposta
-            </button>
-          </div>
-
-          {opportunity.proposals && opportunity.proposals.length > 0 ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              {opportunity.proposals.map(prop => (
-                <div key={prop.id} style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)', padding: '14px', borderRadius: 'var(--radius-md)' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <img src={prop.proposerAvatar} alt={prop.proposerName} style={{ width: '36px', height: '36px', borderRadius: '50%', objectFit: 'cover' }} />
-                      <div>
-                        <strong style={{ fontSize: '0.9rem', color: '#FFF' }}>{prop.proposerName}</strong>
-                        <span className="mono" style={{ fontSize: '0.72rem', color: 'var(--color-primary)', display: 'block' }}>
-                          {prop.creaCau || 'CHANCELA VERIFICADA'}
-                        </span>
-                      </div>
-                    </div>
-
-                    <div style={{ textAlign: 'right' }}>
-                      <span className="mono" style={{ fontSize: '1.1rem', fontWeight: 700, color: '#4ADE80' }}>
-                        R$ {prop.value.toLocaleString('pt-BR')}
-                      </span>
-                      <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block' }}>
-                        Prazo: {prop.deadlineDays} dias
-                      </span>
-                    </div>
+        {/* Proposta list */}
+        {opportunity.proposals && opportunity.proposals.length > 0 && (
+          <div style={{ borderTop: '1px solid var(--steel-line)', paddingTop: '10px' }}>
+            <div className="tb-label" style={{ marginBottom: '6px' }}>Propostas Técnicas Enviadas</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              {opportunity.proposals.map(p => (
+                <div key={p.id} className="card" style={{ padding: '8px 10px', fontSize: '11.5px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 600 }}>
+                    <span>{p.proposerName}</span>
+                    <span className="mono" style={{ color: 'var(--accent)' }}>R$ {p.value.toLocaleString('pt-BR')} ({p.deadlineDays}d)</span>
                   </div>
-
-                  <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '8px' }}>
-                    {prop.scopeDescription}
-                  </p>
-
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.78rem' }}>
-                    <span style={{ color: 'var(--color-primary)', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                      <FileText size={14} /> {prop.attachmentUrl || 'Memorial_Tecnico.pdf'}
-                    </span>
-
-                    {onAcceptProposal && prop.status === 'em_negociacao' && (
-                      <button onClick={() => onAcceptProposal(prop.id)} className="btn-primary" style={{ padding: '4px 10px', fontSize: '0.75rem' }}>
-                        <CheckCircle2 size={12} /> Aceitar e Fechar Contrato
-                      </button>
-                    )}
-                  </div>
+                  <div style={{ color: 'var(--steel)', fontSize: '11px', marginTop: '2px' }}>{p.scopeDescription}</div>
                 </div>
               ))}
             </div>
-          ) : (
-            <div style={{ textAlign: 'center', padding: '30px', background: 'var(--bg-input)', borderRadius: 'var(--radius-md)', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-              Nenhuma proposta enviada ainda. Seja o primeiro profissional verificado a enviar uma proposta!
-            </div>
-          )}
+          </div>
+        )}
+
+        <div style={{ display: 'flex', gap: '8px', marginTop: '6px' }}>
+          <button onClick={onClose} className="btn ghost" style={{ flex: 1, justifyContent: 'center' }}>
+            Fechar
+          </button>
+          <button onClick={onOpenSendProposal} className="btn primary" style={{ flex: 1, justifyContent: 'center' }}>
+            <Send size={12} /> Enviar Proposta
+          </button>
         </div>
 
       </div>

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { Post, UserProfile, PostCategory } from '../../types';
+import { Post, UserProfile } from '../../types';
 import { PostCard } from './PostCard';
-import { PlusCircle, Search, Filter, HardHat, Sparkles, Building2 } from 'lucide-react';
+import { PlusCircle, Search, HardHat, Building2, Sparkles } from 'lucide-react';
 
 interface FeedViewProps {
   posts: Post[];
@@ -34,91 +34,72 @@ export const FeedView: React.FC<FeedViewProps> = ({
   });
 
   return (
-    <div style={{ maxWidth: '880px', margin: '0 auto', padding: '24px 16px' }}>
+    <div style={{ maxWidth: '640px', margin: '0 auto', padding: '20px 16px' }}>
       
-      {/* Hero Welcome Banner */}
-      <div className="glass-card" style={{ padding: '24px', marginBottom: '24px', background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.9), rgba(15, 23, 42, 0.95))', borderLeft: '4px solid var(--color-primary)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px' }}>
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-              <span className="stamp-badge">PERFIL ATIVO</span>
-              <span className="mono" style={{ fontSize: '0.8rem', color: 'var(--color-primary)' }}>{currentUser.creaCauNumber || currentUser.cnpjNumber || 'CONTA VERIFICADA'}</span>
-            </div>
-            <h2 style={{ fontSize: '1.4rem', fontWeight: 800, color: '#FFF' }}>
-              Bem-vindo ao Feed ALICERCE, {currentUser.name.split(' ')[0]}!
-            </h2>
-            <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginTop: '4px' }}>
-              Conecte-se com engenheiros, arquiteto(a)s, construtoras e fornecedores técnicos de todo o Brasil.
-            </p>
+      {/* Header Info & Publish Button */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+        <div>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: '10.5px', color: 'var(--line)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+            FEED DE OBRAS & PROJETOS
           </div>
+          <h2 style={{ fontSize: '20px', fontWeight: 700, color: 'var(--ink)' }}>
+            ALICERCE
+          </h2>
+        </div>
 
-          <button onClick={onOpenCreatePost} className="btn-accent" style={{ fontSize: '0.95rem', padding: '12px 20px' }}>
-            <PlusCircle size={20} /> Publicar Obra / Projeto
-          </button>
+        <button onClick={onOpenCreatePost} className="btn primary" style={{ fontSize: '11px' }}>
+          <PlusCircle size={14} /> Publicar Obra
+        </button>
+      </div>
+
+      {/* Search Input */}
+      <div style={{ position: 'relative', marginBottom: '14px' }}>
+        <Search size={14} color="var(--steel)" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
+        <input 
+          type="text" 
+          className="input-field" 
+          placeholder="Buscar por laje, obra, cálculo, cidade ou engenheiro..." 
+          style={{ paddingLeft: '34px' }}
+          value={searchQuery}
+          onChange={e => setSearchQuery(e.target.value)}
+        />
+      </div>
+
+      {/* Chiprow Filter */}
+      <div className="chiprow" style={{ marginBottom: '18px' }}>
+        <div 
+          className={`chip ${selectedCategory === 'todos' ? 'on' : ''}`}
+          onClick={() => setSelectedCategory('todos')}
+        >
+          Tudo ({posts.length})
+        </div>
+        <div 
+          className={`chip ${selectedCategory === 'obra_andamento' ? 'on' : ''}`}
+          onClick={() => setSelectedCategory('obra_andamento')}
+        >
+          Obras
+        </div>
+        <div 
+          className={`chip ${selectedCategory === 'oportunidade' ? 'on' : ''}`}
+          onClick={() => setSelectedCategory('oportunidade')}
+        >
+          Oportunidades
+        </div>
+        <div 
+          className={`chip ${selectedCategory === 'artigo_tecnico' ? 'on' : ''}`}
+          onClick={() => setSelectedCategory('artigo_tecnico')}
+        >
+          Artigos
+        </div>
+        <div 
+          className={`chip ${selectedCategory === 'patrocinado' ? 'on' : ''}`}
+          onClick={() => setSelectedCategory('patrocinado')}
+        >
+          Patrocinados
         </div>
       </div>
 
-      {/* Filter and Search Bar */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginBottom: '20px' }}>
-        
-        {/* Search Input */}
-        <div style={{ position: 'relative' }}>
-          <Search size={18} color="var(--text-muted)" style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)' }} />
-          <input 
-            type="text" 
-            className="input-field" 
-            placeholder="Buscar por obra, laje, cálculo estrutural, cidade ou profissional..." 
-            style={{ paddingLeft: '40px' }}
-            value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
-          />
-        </div>
-
-        {/* Category Pills */}
-        <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '4px' }}>
-          <button 
-            onClick={() => setSelectedCategory('todos')}
-            className={`btn-outline ${selectedCategory === 'todos' ? 'active-cat' : ''}`}
-            style={selectedCategory === 'todos' ? { background: 'var(--color-primary)', color: '#FFF', borderColor: 'var(--color-primary)' } : {}}
-          >
-            Todas as Publicações ({posts.length})
-          </button>
-
-          <button 
-            onClick={() => setSelectedCategory('obra_andamento')}
-            className={`btn-outline ${selectedCategory === 'obra_andamento' ? 'active-cat' : ''}`}
-            style={selectedCategory === 'obra_andamento' ? { background: 'var(--color-primary)', color: '#FFF', borderColor: 'var(--color-primary)' } : {}}
-          >
-            <HardHat size={16} /> Obras em Andamento
-          </button>
-
-          <button 
-            onClick={() => setSelectedCategory('oportunidade')}
-            className={`btn-outline ${selectedCategory === 'oportunidade' ? 'active-cat' : ''}`}
-            style={selectedCategory === 'oportunidade' ? { background: 'var(--color-accent)', color: '#FFF', borderColor: 'var(--color-accent)' } : {}}
-          >
-            <Building2 size={16} /> Oportunidades & Vagas
-          </button>
-
-          <button 
-            onClick={() => setSelectedCategory('artigo_tecnico')}
-            className={`btn-outline ${selectedCategory === 'artigo_tecnico' ? 'active-cat' : ''}`}
-            style={selectedCategory === 'artigo_tecnico' ? { background: 'var(--color-primary)', color: '#FFF', borderColor: 'var(--color-primary)' } : {}}
-          >
-            Artigos Técnicos
-          </button>
-
-          <button 
-            onClick={() => setSelectedCategory('patrocinado')}
-            className={`btn-outline ${selectedCategory === 'patrocinado' ? 'active-cat' : ''}`}
-            style={selectedCategory === 'patrocinado' ? { background: 'var(--color-accent)', color: '#FFF', borderColor: 'var(--color-accent)' } : {}}
-          >
-            <Sparkles size={16} /> Patrocinados
-          </button>
-        </div>
-      </div>
-
-      {/* Feed List */}
+      {/* Feed Posts */}
       <div>
         {filteredPosts.length > 0 ? (
           filteredPosts.map(post => (
@@ -132,12 +113,11 @@ export const FeedView: React.FC<FeedViewProps> = ({
             />
           ))
         ) : (
-          <div style={{ textAlign: 'center', padding: '60px 20px', background: 'var(--bg-card)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-color)' }}>
-            <HardHat size={48} color="var(--text-muted)" style={{ margin: '0 auto 12px' }} />
-            <h3 style={{ fontSize: '1.1rem', color: 'var(--text-heading)' }}>Nenhuma publicação encontrada</h3>
-            <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginTop: '4px' }}>
-              Tente alterar os termos de busca ou selecione outra categoria.
-            </p>
+          <div className="card" style={{ padding: '40px 20px', textAlign: 'center', color: 'var(--steel)' }}>
+            <HardHat size={36} color="var(--steel)" style={{ margin: '0 auto 8px' }} />
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: '12px' }}>
+              Nenhuma publicação encontrada no feed.
+            </div>
           </div>
         )}
       </div>

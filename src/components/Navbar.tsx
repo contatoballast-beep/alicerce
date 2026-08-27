@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { 
-  Building2, 
   Rss, 
   Briefcase, 
   HardHat, 
@@ -11,9 +10,9 @@ import {
   Lock, 
   Menu, 
   X, 
-  Bell, 
   FileCode2,
-  ChevronDown
+  ChevronDown,
+  Search
 } from 'lucide-react';
 import { UserProfile, UserRole } from '../types';
 
@@ -54,112 +53,99 @@ export const Navbar: React.FC<NavbarProps> = ({
   };
 
   return (
-    <header style={{ position: 'sticky', top: 0, zIndex: 100, background: 'rgba(15, 23, 42, 0.92)', backdropFilter: 'blur(16px)', borderBottom: '1px solid var(--border-color)' }}>
-      <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '0 16px', height: '70px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+    <nav style={{ position: 'sticky', top: 0, zIndex: 100, background: 'rgba(234, 241, 246, 0.95)', backdropFilter: 'blur(8px)', borderBottom: '1px solid var(--steel-line)' }}>
+      <div style={{ maxWidth: '1120px', margin: '0 auto', padding: '12px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         
         {/* Brand Logo */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer' }} onClick={() => handleNavClick('feed')}>
-          <div style={{ background: 'linear-gradient(135deg, #539DC4, #B5654A)', padding: '10px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <Building2 size={24} color="#FFFFFF" />
-          </div>
-          <div>
-            <span style={{ fontFamily: 'var(--font-heading)', fontSize: '1.4rem', fontWeight: 800, letterSpacing: '-0.03em', color: '#FFFFFF' }}>
-              ALICERCE
-            </span>
-            <span className="mono" style={{ display: 'block', fontSize: '0.65rem', color: 'var(--color-primary)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
-              REDE B2B2C CONSTRUÇÃO
-            </span>
-          </div>
+        <div className="wordmark" style={{ cursor: 'pointer' }} onClick={() => handleNavClick('feed')}>
+          <span className="mark"></span>
+          <span>ALICERCE</span>
         </div>
 
-        {/* Desktop Navigation Links */}
-        <nav style={{ display: 'flex', alignItems: 'center', gap: '6px' }} className="desktop-nav">
+        {/* Navigation Tabs */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }} className="desktop-nav">
           <button 
-            className={`btn-outline ${activeTab === 'feed' ? 'active-nav' : ''}`}
+            className={`btn ghost ${activeTab === 'feed' ? 'primary' : ''}`}
             onClick={() => handleNavClick('feed')}
-            style={activeTab === 'feed' ? { borderColor: 'var(--color-primary)', background: 'var(--color-primary-light)', color: 'var(--color-primary)' } : { border: 'none' }}
+            style={activeTab === 'feed' ? { background: 'var(--ink)', borderColor: 'var(--ink)', color: '#FFF' } : {}}
           >
-            <Rss size={18} /> Feed & Obras
+            <Rss size={15} /> Feed
           </button>
 
           <button 
-            className={`btn-outline ${activeTab === 'opportunities' ? 'active-nav' : ''}`}
+            className={`btn ghost ${activeTab === 'opportunities' ? 'primary' : ''}`}
             onClick={() => handleNavClick('opportunities')}
-            style={activeTab === 'opportunities' ? { borderColor: 'var(--color-primary)', background: 'var(--color-primary-light)', color: 'var(--color-primary)' } : { border: 'none' }}
+            style={activeTab === 'opportunities' ? { background: 'var(--ink)', borderColor: 'var(--ink)', color: '#FFF' } : {}}
           >
-            <Briefcase size={18} /> Oportunidades
+            <Briefcase size={15} /> Explorar
           </button>
 
           <button 
-            className={`btn-outline ${activeTab === 'timeline' ? 'active-nav' : ''}`}
+            className={`btn ghost ${activeTab === 'timeline' ? 'primary' : ''}`}
             onClick={() => handleNavClick('timeline')}
-            style={activeTab === 'timeline' ? { borderColor: 'var(--color-primary)', background: 'var(--color-primary-light)', color: 'var(--color-primary)' } : { border: 'none' }}
+            style={activeTab === 'timeline' ? { background: 'var(--ink)', borderColor: 'var(--ink)', color: '#FFF' } : {}}
           >
-            <HardHat size={18} /> Diário de Obra
+            <HardHat size={15} /> Diário de Obra
           </button>
 
           <button 
-            className={`btn-outline ${activeTab === 'chat' ? 'active-nav' : ''}`}
+            className={`btn ghost ${activeTab === 'chat' ? 'primary' : ''}`}
             onClick={() => handleNavClick('chat')}
-            style={{ border: 'none', position: 'relative' }}
+            style={{ position: 'relative' }}
           >
-            <MessageSquare size={18} /> Mensagens
+            <MessageSquare size={15} /> Msgs
             {unreadMessagesCount > 0 && (
-              <span style={{ position: 'absolute', top: '4px', right: '4px', background: 'var(--color-accent)', color: '#FFF', fontSize: '0.65rem', fontWeight: 700, borderRadius: '50%', width: '18px', height: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                {unreadMessagesCount}
-              </span>
+              <span style={{ position: 'absolute', top: '2px', right: '2px', width: '6px', height: '6px', background: 'var(--line)', borderRadius: '50%' }} />
             )}
           </button>
 
           <button 
-            className={`btn-outline ${activeTab === 'ads' ? 'active-nav' : ''}`}
+            className={`btn ghost ${activeTab === 'ads' ? 'primary' : ''}`}
             onClick={() => handleNavClick('ads')}
-            style={activeTab === 'ads' ? { borderColor: 'var(--color-accent)', background: 'var(--color-accent-light)', color: 'var(--color-accent)' } : { border: 'none' }}
+            style={activeTab === 'ads' ? { background: 'var(--line)', borderColor: 'var(--line)', color: '#FFF' } : { color: 'var(--line)' }}
           >
-            <Megaphone size={18} color="var(--color-accent)" /> ALICERCE Ads
+            <Megaphone size={15} /> Ads
           </button>
 
           {currentUser.role === 'admin' && (
             <button 
-              className={`btn-outline ${activeTab === 'admin' ? 'active-nav' : ''}`}
+              className={`btn ghost`}
               onClick={() => handleNavClick('admin')}
-              style={{ border: 'none', color: '#FACC15' }}
+              style={{ color: 'var(--ink-soft)' }}
             >
-              <ShieldAlert size={18} /> Painel Admin
+              <ShieldAlert size={15} /> Admin
             </button>
           )}
 
           <button 
-            className="btn-outline"
+            className="btn ghost"
             onClick={() => handleNavClick('swagger')}
-            style={{ border: 'none', color: 'var(--text-muted)' }}
-            title="Especificação OpenAPI/Swagger 3.0"
+            title="OpenAPI Spec"
           >
-            <FileCode2 size={18} /> API Spec
+            <FileCode2 size={15} /> API
           </button>
-        </nav>
+        </div>
 
-        {/* User Role Switcher & Controls */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+        {/* User Role Switcher Dropdown */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           
-          {/* Role Switcher Dropdown */}
           <div style={{ position: 'relative' }}>
             <button 
               onClick={() => setRoleDropdownOpen(!roleDropdownOpen)}
-              style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)', padding: '6px 12px', borderRadius: 'var(--radius-md)', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', color: 'var(--text-main)', fontSize: '0.85rem' }}
+              style={{ background: 'var(--white)', border: '1px solid var(--steel-line)', padding: '5px 10px', borderRadius: '3px', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}
             >
-              <img src={currentUser.avatar} alt="Avatar" style={{ width: '28px', height: '28px', borderRadius: '50%', objectFit: 'cover' }} />
+              <div className="avatar">{currentUser.name.split(' ').map(n => n[0]).join('').substring(0, 2)}</div>
               <div style={{ textAlign: 'left', display: 'none' }} className="user-name-desktop">
-                <div style={{ fontWeight: 600, fontSize: '0.8rem', lineHeight: 1.2 }}>{currentUser.name}</div>
-                <div className="mono" style={{ fontSize: '0.68rem', color: 'var(--color-primary)' }}>{currentUser.creaCauNumber || currentUser.cnpjNumber || 'Pessoa Física'}</div>
+                <div style={{ fontWeight: 600, fontSize: '12px', color: 'var(--ink)' }}>{currentUser.name}</div>
+                <div className="mono" style={{ fontSize: '9.5px', color: 'var(--steel)' }}>{currentUser.creaCauNumber || currentUser.cnpjNumber || 'Pessoa Física'}</div>
               </div>
-              <ChevronDown size={14} color="var(--text-muted)" />
+              <ChevronDown size={14} color="var(--steel)" />
             </button>
 
             {roleDropdownOpen && (
-              <div style={{ position: 'absolute', right: 0, top: '45px', width: '260px', background: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', padding: '8px', boxShadow: 'var(--shadow-card)', zIndex: 110 }}>
-                <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', padding: '4px 8px', fontFamily: 'var(--font-mono)' }}>
-                  Alternar Perfil Simulado (RBAC)
+              <div style={{ position: 'absolute', right: 0, top: '42px', width: '250px', background: 'var(--white)', border: '1px solid var(--steel-line)', borderRadius: '3px', padding: '6px', boxShadow: '0 10px 30px rgba(0,0,0,0.1)', zIndex: 110 }}>
+                <div style={{ fontSize: '9px', color: 'var(--steel)', textTransform: 'uppercase', padding: '4px 6px', fontFamily: 'var(--font-mono)' }}>
+                  Alternar Perfil (RBAC)
                 </div>
                 {rolesList.map(item => (
                   <button
@@ -168,55 +154,34 @@ export const Navbar: React.FC<NavbarProps> = ({
                       onSwitchRole(item.role);
                       setRoleDropdownOpen(false);
                     }}
-                    style={{ width: '100%', textAlign: 'left', padding: '8px', background: currentUser.role === item.role ? 'var(--color-primary-light)' : 'transparent', border: 'none', borderRadius: 'var(--radius-sm)', color: currentUser.role === item.role ? 'var(--color-primary)' : 'var(--text-main)', cursor: 'pointer', display: 'block', marginBottom: '4px' }}
+                    style={{ width: '100%', textAlign: 'left', padding: '6px 8px', background: currentUser.role === item.role ? 'var(--paper)' : 'transparent', border: 'none', borderRadius: '2px', color: 'var(--ink)', cursor: 'pointer', display: 'block', marginBottom: '2px' }}
                   >
-                    <div style={{ fontWeight: 600, fontSize: '0.85rem' }}>{item.label}</div>
-                    <div className="mono" style={{ fontSize: '0.7rem', opacity: 0.8 }}>{item.sub}</div>
+                    <div style={{ fontWeight: 600, fontSize: '12px' }}>{item.label}</div>
+                    <div className="mono" style={{ fontSize: '9.5px', color: 'var(--steel)' }}>{item.sub}</div>
                   </button>
                 ))}
                 
-                <div style={{ borderTop: '1px solid var(--border-color)', marginTop: '6px', paddingTop: '6px' }}>
+                <div style={{ borderTop: '1px solid var(--steel-line)', marginTop: '4px', paddingTop: '4px' }}>
                   <button 
                     onClick={() => { onOpenLGPD(); setRoleDropdownOpen(false); }}
-                    style={{ width: '100%', textAlign: 'left', padding: '8px', background: 'transparent', border: 'none', color: 'var(--text-muted)', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+                    style={{ width: '100%', textAlign: 'left', padding: '6px 8px', background: 'transparent', border: 'none', color: 'var(--steel)', fontSize: '11px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
                   >
-                    <Lock size={14} /> Privacidade & LGPD
+                    <Lock size={12} /> Centro LGPD
                   </button>
                   <button 
                     onClick={() => { onOpenAuth(); setRoleDropdownOpen(false); }}
-                    style={{ width: '100%', textAlign: 'left', padding: '8px', background: 'transparent', border: 'none', color: 'var(--color-primary)', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 600 }}
+                    style={{ width: '100%', textAlign: 'left', padding: '6px 8px', background: 'transparent', border: 'none', color: 'var(--accent)', fontSize: '11px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 600 }}
                   >
-                    <UserCheck size={14} /> Novo Cadastro / Login
+                    <UserCheck size={12} /> Login / Novo Cadastro
                   </button>
                 </div>
               </div>
             )}
           </div>
 
-          {/* Mobile Menu Trigger */}
-          <button 
-            className="mobile-trigger" 
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            style={{ background: 'transparent', border: 'none', color: 'var(--text-main)', cursor: 'pointer' }}
-          >
-            {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
-          </button>
         </div>
-      </div>
 
-      {/* Mobile Drawer Navigation */}
-      {mobileMenuOpen && (
-        <div style={{ background: 'var(--bg-darker)', borderBottom: '1px solid var(--border-color)', padding: '16px' }} className="mobile-menu">
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            <button className="btn-outline" onClick={() => handleNavClick('feed')} style={{ justifyContent: 'flex-start' }}><Rss size={18} /> Feed & Obras</button>
-            <button className="btn-outline" onClick={() => handleNavClick('opportunities')} style={{ justifyContent: 'flex-start' }}><Briefcase size={18} /> Oportunidades</button>
-            <button className="btn-outline" onClick={() => handleNavClick('timeline')} style={{ justifyContent: 'flex-start' }}><HardHat size={18} /> Diário de Obra</button>
-            <button className="btn-outline" onClick={() => handleNavClick('chat')} style={{ justifyContent: 'flex-start' }}><MessageSquare size={18} /> Mensagens ({unreadMessagesCount})</button>
-            <button className="btn-outline" onClick={() => handleNavClick('ads')} style={{ justifyContent: 'flex-start', color: 'var(--color-accent)' }}><Megaphone size={18} /> ALICERCE Ads</button>
-            <button className="btn-outline" onClick={() => handleNavClick('swagger')} style={{ justifyContent: 'flex-start' }}><FileCode2 size={18} /> Swagger / API Docs</button>
-          </div>
-        </div>
-      )}
-    </header>
+      </div>
+    </nav>
   );
 };
