@@ -1,0 +1,16 @@
+{
+  "short_name": "ALICERCE",
+  "name": "ALICERCE | Plataforma B2B2C da Construção Civil",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/x-icon"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#0F172A",
+  "theme_color": "#539DC4",
+  "display": "standalone",
+  "description": "Rede Social B2B2C e Marketplace para a Indústria da Construção Civil no Brasil."
+}
