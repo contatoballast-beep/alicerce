@@ -1,12 +1,18 @@
 import express from 'express';
 import cors from 'cors';
 import http from 'http';
+import path from 'path';
+import fs from 'fs';
+import { fileURLToPath } from 'url';
 import { WebSocketServer, WebSocket } from 'ws';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import dotenv from 'dotenv';
 import { db } from './db/turso.js';
 import { initSchema } from './db/initSchema.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 dotenv.config();
 
@@ -20,8 +26,8 @@ app.use(express.json());
 // Initialize Turso DB Schema
 await initSchema();
 
-// Health Check
-app.get('/', (req, res) => {
+// Health Check API
+app.get('/api/health', (req, res) => {
   res.json({
     status: 'online',
     service: 'ALICERCE Backend API',
@@ -29,10 +35,6 @@ app.get('/', (req, res) => {
     version: '1.0.0',
     timestamp: new Date().toISOString()
   });
-});
-
-app.get('/api/health', (req, res) => {
-  res.json({ ok: true, db: 'connected' });
 });
 
 // Middleware: Authenticate JWT
@@ -334,6 +336,33 @@ app.get('/api/messages/:threadId', async (req, res) => {
     res.status(500).json({ error: 'Erro ao carregar mensagens' });
   }
 });
+
+// Serve Frontend Production Build (if available)
+const clientDistCandidates = [
+  path.resolve(__dirname, '../../dist'),
+  path.resolve(process.cwd(), 'dist'),
+  path.resolve(process.cwd(), '../dist')
+];
+const clientDistPath = clientDistCandidates.find(p => fs.existsSync(path.join(p, 'index.html')));
+
+if (clientDistPath) {
+  console.log(`[Frontend] Servindo frontend de: ${clientDistPath}`);
+  app.use(express.static(clientDistPath));
+  app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api') || req.path.startsWith('/ws')) return next();
+    res.sendFile(path.join(clientDistPath, 'index.html'));
+  });
+} else {
+  app.get('/', (req, res) => {
+    res.json({
+      status: 'online',
+      service: 'ALICERCE Backend API',
+      database: 'Turso DB (@libsql/client)',
+      version: '1.0.0',
+      timestamp: new Date().toISOString()
+    });
+  });
+}
 
 /* Create HTTP Server & WebSocket Server */
 const server = http.createServer(app);
