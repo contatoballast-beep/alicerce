@@ -11,11 +11,11 @@ import {
   Lock, 
   Menu, 
   X, 
-  FileCode2,
-  ChevronDown,
-  Heart,
-  Truck,
-  Users
+  ChevronDown, 
+  Heart, 
+  Truck, 
+  LogOut,
+  User
 } from 'lucide-react';
 import { UserProfile, UserRole } from '../types';
 
@@ -23,9 +23,10 @@ interface NavbarProps {
   currentUser: UserProfile;
   activeTab: string;
   setActiveTab: (tab: string) => void;
-  onOpenAuth: () => void;
+  onOpenAuth: (mode?: 'login' | 'register') => void;
   onOpenLGPD: () => void;
   onSwitchRole: (role: UserRole) => void;
+  onLogout: () => void;
   unreadMessagesCount: number;
 }
 
@@ -36,6 +37,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenAuth,
   onOpenLGPD,
   onSwitchRole,
+  onLogout,
   unreadMessagesCount,
 }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -54,6 +56,8 @@ export const Navbar: React.FC<NavbarProps> = ({
     setActiveTab(tab);
     setMobileMenuOpen(false);
   };
+
+  const isGuest = !currentUser || currentUser.id === 'usr_guest';
 
   return (
     <nav style={{ position: 'sticky', top: 0, zIndex: 100, background: 'rgba(234, 241, 246, 0.98)', backdropFilter: 'blur(8px)', borderBottom: '1px solid var(--steel-line)' }}>
@@ -134,7 +138,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             <Megaphone size={14} /> Ads
           </button>
 
-          {currentUser.role === 'admin' && (
+          {currentUser && currentUser.role === 'admin' && (
             <button 
               className={`btn ghost`}
               onClick={() => handleNavClick('admin')}
@@ -145,60 +149,96 @@ export const Navbar: React.FC<NavbarProps> = ({
           )}
         </div>
 
-        {/* User Role Switcher Dropdown */}
+        {/* User Auth / Account Dropdown */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           
-          <div style={{ position: 'relative' }}>
-            <button 
-              onClick={() => setRoleDropdownOpen(!roleDropdownOpen)}
-              style={{ background: 'var(--white)', border: '1px solid var(--steel-line)', padding: '4px 8px', borderRadius: '3px', display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}
-            >
-              <div className="avatar" style={{ width: '24px', height: '24px', fontSize: '10px' }}>
-                {currentUser.name.substring(0, 2).toUpperCase()}
-              </div>
-              <div style={{ textAlign: 'left', display: 'none' }} className="user-name-desktop">
-                <div style={{ fontWeight: 600, fontSize: '11.5px', color: 'var(--ink)' }}>{currentUser.name}</div>
-                <div className="mono" style={{ fontSize: '9px', color: 'var(--steel)' }}>{currentUser.role}</div>
-              </div>
-              <ChevronDown size={12} color="var(--steel)" />
-            </button>
+          {isGuest ? (
+            <div style={{ display: 'flex', gap: '6px' }}>
+              <button 
+                onClick={() => onOpenAuth('login')}
+                className="btn ghost" 
+                style={{ padding: '6px 12px', fontSize: '11px' }}
+              >
+                Entrar
+              </button>
+              <button 
+                onClick={() => onOpenAuth('register')}
+                className="btn primary" 
+                style={{ padding: '6px 12px', fontSize: '11px' }}
+              >
+                Cadastrar
+              </button>
+            </div>
+          ) : (
+            <div style={{ position: 'relative' }}>
+              <button 
+                onClick={() => setRoleDropdownOpen(!roleDropdownOpen)}
+                style={{ background: 'var(--white)', border: '1px solid var(--steel-line)', padding: '4px 8px', borderRadius: '3px', display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}
+              >
+                <div className="avatar" style={{ width: '24px', height: '24px', fontSize: '10px' }}>
+                  {currentUser.name.substring(0, 2).toUpperCase()}
+                </div>
+                <div style={{ textAlign: 'left', display: 'none' }} className="user-name-desktop">
+                  <div style={{ fontWeight: 600, fontSize: '11.5px', color: 'var(--ink)' }}>{currentUser.name.split(' ')[0]}</div>
+                  <div className="mono" style={{ fontSize: '9px', color: 'var(--steel)' }}>{currentUser.role}</div>
+                </div>
+                <ChevronDown size={12} color="var(--steel)" />
+              </button>
 
-            {roleDropdownOpen && (
-              <div style={{ position: 'absolute', right: 0, top: '38px', width: '250px', background: 'var(--white)', border: '1px solid var(--steel-line)', borderRadius: '3px', padding: '6px', boxShadow: '0 10px 30px rgba(0,0,0,0.1)', zIndex: 110 }}>
-                <div style={{ fontSize: '9px', color: 'var(--steel)', textTransform: 'uppercase', padding: '4px 6px', fontFamily: 'var(--font-mono)' }}>
-                  Alternar Perfil Ativo (RBAC)
+              {roleDropdownOpen && (
+                <div style={{ position: 'absolute', right: 0, top: '38px', width: '260px', background: 'var(--white)', border: '1px solid var(--steel-line)', borderRadius: '3px', padding: '6px', boxShadow: '0 10px 30px rgba(0,0,0,0.12)', zIndex: 110 }}>
+                  
+                  {/* Current user header */}
+                  <div style={{ padding: '6px 8px', borderBottom: '1px solid var(--steel-line)', marginBottom: '4px' }}>
+                    <div style={{ fontWeight: 700, fontSize: '12px', color: 'var(--ink)' }}>{currentUser.name}</div>
+                    <div style={{ fontSize: '10.5px', color: 'var(--steel)' }}>{currentUser.email}</div>
+                    <div className="mono" style={{ fontSize: '9.5px', color: 'var(--accent)', marginTop: '2px' }}>
+                      {currentUser.creaCauNumber || currentUser.cnpjNumber || 'Conta Verificada'}
+                    </div>
+                  </div>
+
+                  <div style={{ fontSize: '9px', color: 'var(--steel)', textTransform: 'uppercase', padding: '4px 6px', fontFamily: 'var(--font-mono)' }}>
+                    Alternar Tipo de Perfil (RBAC Demo):
+                  </div>
+                  
+                  {rolesList.map(item => (
+                    <button
+                      key={item.role}
+                      onClick={() => {
+                        onSwitchRole(item.role);
+                        setRoleDropdownOpen(false);
+                      }}
+                      style={{ width: '100%', textAlign: 'left', padding: '5px 8px', background: currentUser.role === item.role ? 'var(--paper)' : 'transparent', border: 'none', borderRadius: '2px', color: 'var(--ink)', cursor: 'pointer', display: 'block', marginBottom: '2px' }}
+                    >
+                      <div style={{ fontWeight: 600, fontSize: '11px' }}>{item.label}</div>
+                      <div className="mono" style={{ fontSize: '9px', color: 'var(--steel)' }}>{item.sub}</div>
+                    </button>
+                  ))}
+                  
+                  <div style={{ borderTop: '1px solid var(--steel-line)', marginTop: '4px', paddingTop: '4px', display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                    <button 
+                      onClick={() => { onOpenAuth('login'); setRoleDropdownOpen(false); }}
+                      style={{ width: '100%', textAlign: 'left', padding: '5px 8px', background: 'transparent', border: 'none', color: 'var(--accent)', fontSize: '11px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 600 }}
+                    >
+                      <UserCheck size={12} /> Trocar de Conta (Login)
+                    </button>
+                    <button 
+                      onClick={() => { onOpenLGPD(); setRoleDropdownOpen(false); }}
+                      style={{ width: '100%', textAlign: 'left', padding: '5px 8px', background: 'transparent', border: 'none', color: 'var(--steel)', fontSize: '11px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+                    >
+                      <Lock size={12} /> Privacidade LGPD
+                    </button>
+                    <button 
+                      onClick={() => { onLogout(); setRoleDropdownOpen(false); }}
+                      style={{ width: '100%', textAlign: 'left', padding: '5px 8px', background: 'transparent', border: 'none', color: '#DC2626', fontSize: '11px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 600 }}
+                    >
+                      <LogOut size={12} /> Sair da Conta
+                    </button>
+                  </div>
                 </div>
-                {rolesList.map(item => (
-                  <button
-                    key={item.role}
-                    onClick={() => {
-                      onSwitchRole(item.role);
-                      setRoleDropdownOpen(false);
-                    }}
-                    style={{ width: '100%', textAlign: 'left', padding: '6px 8px', background: currentUser.role === item.role ? 'var(--paper)' : 'transparent', border: 'none', borderRadius: '2px', color: 'var(--ink)', cursor: 'pointer', display: 'block', marginBottom: '2px' }}
-                  >
-                    <div style={{ fontWeight: 600, fontSize: '11.5px' }}>{item.label}</div>
-                    <div className="mono" style={{ fontSize: '9px', color: 'var(--steel)' }}>{item.sub}</div>
-                  </button>
-                ))}
-                
-                <div style={{ borderTop: '1px solid var(--steel-line)', marginTop: '4px', paddingTop: '4px' }}>
-                  <button 
-                    onClick={() => { onOpenLGPD(); setRoleDropdownOpen(false); }}
-                    style={{ width: '100%', textAlign: 'left', padding: '6px 8px', background: 'transparent', border: 'none', color: 'var(--steel)', fontSize: '11px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
-                  >
-                    <Lock size={12} /> Privacidade LGPD
-                  </button>
-                  <button 
-                    onClick={() => { onOpenAuth(); setRoleDropdownOpen(false); }}
-                    style={{ width: '100%', textAlign: 'left', padding: '6px 8px', background: 'transparent', border: 'none', color: 'var(--accent)', fontSize: '11px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 600 }}
-                  >
-                    <UserCheck size={12} /> Entrar / Novo Cadastro
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
+              )}
+            </div>
+          )}
 
           {/* Mobile Menu Toggle */}
           <button 
@@ -224,6 +264,15 @@ export const Navbar: React.FC<NavbarProps> = ({
           <button className="btn ghost" onClick={() => handleNavClick('chat')}><MessageSquare size={13} /> Mensagens</button>
           <button className="btn ghost" onClick={() => handleNavClick('favorites')}><Heart size={13} /> Salvos & Favoritos</button>
           <button className="btn ghost" onClick={() => handleNavClick('ads')}><Megaphone size={13} /> ALICERCE Ads</button>
+          
+          <div style={{ borderTop: '1px solid var(--steel-line)', paddingTop: '6px', display: 'flex', gap: '6px' }}>
+            <button className="btn primary" onClick={() => { onOpenAuth('login'); setMobileMenuOpen(false); }} style={{ flex: 1 }}>
+              Entrar
+            </button>
+            <button className="btn ghost" onClick={() => { onOpenAuth('register'); setMobileMenuOpen(false); }} style={{ flex: 1 }}>
+              Cadastrar
+            </button>
+          </div>
         </div>
       )}
     </nav>

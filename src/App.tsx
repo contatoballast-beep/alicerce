@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { LocalApiService } from './services/api';
-import { RealApiClient } from './services/realApiClient';
+import { RealApiClient, removeAuthToken } from './services/realApiClient';
 import { 
   UserProfile, 
   Post, 
@@ -66,6 +66,7 @@ export const App: React.FC = () => {
 
   // Modal Control States
   const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [authModalMode, setAuthModalMode] = useState<'login' | 'register'>('login');
   const [lgpdModalOpen, setLgpdModalOpen] = useState(false);
   const [createPostOpen, setCreatePostOpen] = useState(false);
   const [createOpportunityOpen, setCreateOpportunityOpen] = useState(false);
@@ -228,6 +229,25 @@ export const App: React.FC = () => {
     showToast(`Item de moderação marcado como ${status.toUpperCase()}`);
   };
 
+  const handleLogout = () => {
+    removeAuthToken();
+    const guestUser: UserProfile = {
+      id: 'usr_guest',
+      name: 'Visitante',
+      email: 'visitante@alicerce.com.br',
+      role: 'cliente',
+      avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+      city: 'São Paulo',
+      state: 'SP',
+      verified: false,
+      consentLgpd: true,
+      createdAt: new Date().toLocaleDateString('pt-BR'),
+    };
+    LocalApiService.updateUser(guestUser);
+    setCurrentUser(guestUser);
+    showToast("Você saiu da sua conta.");
+  };
+
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       
@@ -244,9 +264,13 @@ export const App: React.FC = () => {
         currentUser={currentUser}
         activeTab={activeTab}
         setActiveTab={setActiveTab}
-        onOpenAuth={() => setAuthModalOpen(true)}
+        onOpenAuth={(mode) => {
+          setAuthModalMode(mode || 'login');
+          setAuthModalOpen(true);
+        }}
         onOpenLGPD={() => setLgpdModalOpen(true)}
         onSwitchRole={handleSwitchRole}
+        onLogout={handleLogout}
         unreadMessagesCount={1}
       />
 
@@ -381,6 +405,7 @@ export const App: React.FC = () => {
          ========================================================================== */}
       <AuthModal 
         isOpen={authModalOpen}
+        initialMode={authModalMode}
         onClose={() => setAuthModalOpen(false)}
         onLoginSuccess={(u) => {
           setCurrentUser(u);

@@ -91,11 +91,51 @@ export const RealApiClient = {
         LocalApiService.updateUser(data.user);
         return { token: data.token, user: data.user };
       }
-      return { error: data.error || 'Falha no login' };
+      return { error: data.error || 'Falha no login. Verifique e-mail e senha.' };
     } catch (err: any) {
       console.warn('[API Client] Fallback local para login:', err);
-      const user = LocalApiService.getUser();
-      return { user };
+      
+      let role: UserRole = 'profissional_crea';
+      let name = 'Eng. Roberto Silva';
+      let creaCau: string | undefined = 'CREA-SP 5069824/D';
+      let cnpj: string | undefined = undefined;
+
+      if (email.includes('camila')) {
+        role = 'profissional_cau';
+        name = 'Arqª. Camila Torres';
+        creaCau = 'CAU A88291-0';
+      } else if (email.includes('vanguard')) {
+        role = 'empresa_cnpj';
+        name = 'Vanguard Construtora & Engenharia';
+        cnpj = '33.910.402/0001-12';
+        creaCau = undefined;
+      } else if (email.includes('polimix')) {
+        role = 'fornecedor';
+        name = 'Polimix Materiais & Concreto';
+        cnpj = '44.821.903/0001-55';
+        creaCau = undefined;
+      } else if (email.includes('admin')) {
+        role = 'admin';
+        name = 'Administrador Geral';
+      }
+
+      const fallbackUser: UserProfile = {
+        id: 'usr_' + Date.now(),
+        name,
+        email,
+        role,
+        avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+        city: 'São Paulo',
+        state: 'SP',
+        creaCauNumber: creaCau,
+        cnpjNumber: cnpj,
+        verified: true,
+        consentLgpd: true,
+        createdAt: new Date().toLocaleDateString('pt-BR')
+      };
+      LocalApiService.updateUser(fallbackUser);
+      setAuthToken('demo_token_' + fallbackUser.id);
+      return { user: fallbackUser };
     }
   },
 
