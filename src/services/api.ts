@@ -67,7 +67,12 @@ export const LocalApiService = {
 
   // Feed Posts
   getPosts(): Post[] {
-    return getStored<Post[]>(STORAGE_KEYS.POSTS, MOCK_POSTS);
+    const raw = getStored<Post[]>(STORAGE_KEYS.POSTS, []);
+    const clean = raw.filter(p => !['post_1', 'post_2', 'post_3'].includes(p.id));
+    if (clean.length !== raw.length) {
+      setStored(STORAGE_KEYS.POSTS, clean);
+    }
+    return clean;
   },
 
   addPost(postData: Omit<Post, 'id' | 'createdAt' | 'likesCount' | 'commentsCount' | 'proposalsCount'>): Post {

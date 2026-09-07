@@ -725,7 +725,7 @@ app.post('/api/opportunities/:id/proposals', async (req, res) => {
    ========================================================================== */
 app.get('/api/feed/posts', async (req, res) => {
   try {
-    const result = await db.execute("SELECT * FROM posts ORDER BY id DESC");
+    const result = await db.execute("SELECT * FROM posts WHERE id NOT IN ('post_1', 'post_2', 'post_3') ORDER BY id DESC");
     const posts = result.rows.map((row: any) => ({
       id: row.id,
       authorId: row.author_id,

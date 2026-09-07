@@ -91,6 +91,13 @@ export const App: React.FC = () => {
 
   // Sync Backend on Startup
   useEffect(() => {
+    try {
+      const stored = localStorage.getItem('alicerce_posts');
+      if (stored && (stored.includes('post_1') || stored.includes('Concretagem de Laje Protendida') || stored.includes('Horizon'))) {
+        localStorage.removeItem('alicerce_posts');
+      }
+    } catch (e) {}
+
     const syncBackendData = async () => {
       const health = await RealApiClient.checkHealth();
       setServerOnline(health.ok);
@@ -103,7 +110,8 @@ export const App: React.FC = () => {
           RealApiClient.getCampaigns(),
           RealApiClient.getFavorites(currentUser.id),
         ]);
-        if (fetchedPosts?.length) setPosts(fetchedPosts);
+        const cleanPosts = (fetchedPosts || []).filter(p => !['post_1', 'post_2', 'post_3'].includes(p.id));
+        setPosts(cleanPosts);
         if (fetchedOpps?.length) setOpportunities(fetchedOpps);
         if (fetchedCamps?.length) setCampaigns(fetchedCamps);
         if (fetchedFavs?.length) {

@@ -316,8 +316,8 @@ export const RealApiClient = {
       const res = await fetch(`${API_BASE_URL}/api/feed/posts`);
       if (res.ok) {
         const data = await res.json();
-        if (Array.isArray(data) && data.length > 0) {
-          return data;
+        if (Array.isArray(data)) {
+          return data.filter(p => !['post_1', 'post_2', 'post_3'].includes(p.id));
         }
       }
     } catch (err) {

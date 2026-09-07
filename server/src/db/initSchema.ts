@@ -525,36 +525,8 @@ export async function initSchema() {
         ]
       });
 
-      // 6. Posts
-      await db.execute({
-        sql: `INSERT INTO posts (id, author_id, author_name, author_avatar, author_role, author_badge, category, title, content, media_urls, stamp_id, registration_number, hash_verification, art_rrt_code, city, state, budget_estimated, deadline_days, likes_count, comments_count, proposals_count, is_sponsored, created_at)
-              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        args: [
-          'post_1',
-          'usr_curr',
-          'Eng. Roberto Silva',
-          'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=150&auto=format&fit=crop&q=80',
-          'profissional_crea',
-          'CREA-SP 5069824/D',
-          'obra_andamento',
-          'Concretagem de Laje Protendida - Edifício Horizon (14º Pavimento)',
-          'Concluímos hoje a concretagem de 450m² de laje protendida no Edifício Horizon. Utilizado fck 40 MPa com aditivo plastificante.',
-          'https://images.unsplash.com/photo-1541888946425-d0fbb186a5b7?w=800&auto=format&fit=crop&q=80',
-          'ALC-2026-8812',
-          'CREA-SP 5069824/D',
-          'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
-          'ART SP2026/998124',
-          'São Paulo',
-          'SP',
-          1250000,
-          180,
-          142,
-          29,
-          8,
-          0,
-          'Há 2 horas'
-        ]
-      });
+      // 6. Posts (Purge legacy mock posts)
+      await db.execute("DELETE FROM posts WHERE id IN ('post_1', 'post_2', 'post_3')");
 
       // 7. Opportunity
       await db.execute({

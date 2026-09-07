@@ -184,11 +184,17 @@ export const FeedView: React.FC<FeedViewProps> = ({
             />
           ))
         ) : (
-          <div className="card" style={{ padding: '40px 20px', textAlign: 'center', color: 'var(--steel)' }}>
-            <HardHat size={36} color="var(--steel)" style={{ margin: '0 auto 8px' }} />
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: '12px' }}>
-              Nenhuma publicação encontrada para os critérios selecionados.
-            </div>
+          <div className="card" style={{ padding: '48px 24px', textAlign: 'center', color: 'var(--steel)', background: 'var(--white)', border: '1px dashed var(--steel-line)' }}>
+            <HardHat size={40} color="var(--accent)" style={{ margin: '0 auto 12px' }} />
+            <h3 style={{ fontSize: '15px', fontWeight: 700, color: 'var(--ink)', marginBottom: '6px' }}>
+              Nenhuma publicação encontrada
+            </h3>
+            <p style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', color: 'var(--steel)', maxWidth: '380px', margin: '0 auto 16px', lineHeight: 1.4 }}>
+              O feed está pronto para receber suas obras, laudos com ART/RRT e oportunidades reais da construção civil.
+            </p>
+            <button onClick={onOpenCreatePost} className="btn primary" style={{ margin: '0 auto', fontSize: '11px' }}>
+              <PlusCircle size={14} /> Publicar Primeira Obra no Feed
+            </button>
           </div>
         )}
       </div>
