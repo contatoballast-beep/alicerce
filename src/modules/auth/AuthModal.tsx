@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { Modal } from '../../components/Modal';
 import { UserRole, UserProfile } from '../../types';
-import { ShieldCheck, HardHat, Building, CheckCircle2 } from 'lucide-react';
+import { RealApiClient } from '../../services/realApiClient';
+import { CheckCircle2, Loader2, AlertCircle } from 'lucide-react';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -18,38 +19,67 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLoginSu
   const [password, setPassword] = useState('');
   const [creaCau, setCreaCau] = useState('');
   const [cnpj, setCnpj] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const handleRegister = (e: React.FormEvent) => {
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password || !name) return;
 
-    const newUser: UserProfile = {
-      id: `usr_${Date.now()}`,
+    setLoading(true);
+    setErrorMessage(null);
+
+    const res = await RealApiClient.register({
       name,
       email,
+      password,
       role: selectedRole,
-      avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-      bio: 'Perfil cadastrado na plataforma ALICERCE.',
-      creaCauNumber: selectedRole.includes('crea') ? (creaCau || 'CREA-SP 5099812/D') : selectedRole.includes('cau') ? (creaCau || 'CAU A99182-0') : undefined,
-      cnpjNumber: selectedRole === 'empresa_cnpj' ? (cnpj || '12.345.678/0001-90') : undefined,
-      verified: true,
-      twoFactorEnabled: true,
+      creaCauNumber: creaCau || (selectedRole.includes('crea') ? 'CREA-SP 5099812/D' : undefined),
+      cnpjNumber: cnpj || (selectedRole === 'empresa_cnpj' ? '12.345.678/0001-90' : undefined),
       city: 'São Paulo',
-      state: 'SP',
-      consentLgpd: true,
-      createdAt: new Date().toLocaleDateString('pt-BR'),
-    };
+      state: 'SP'
+    });
 
-    onLoginSuccess(newUser);
-    onClose();
+    setLoading(false);
+
+    if (res.user) {
+      onLoginSuccess(res.user);
+      onClose();
+    } else if (res.error) {
+      setErrorMessage(res.error);
+    }
+  };
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email || !password) return;
+
+    setLoading(true);
+    setErrorMessage(null);
+
+    const res = await RealApiClient.login(email, password);
+    setLoading(false);
+
+    if (res.user) {
+      onLoginSuccess(res.user);
+      onClose();
+    } else if (res.error) {
+      setErrorMessage(res.error);
+    }
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={mode === 'register' ? 'Criar Conta ALICERCE' : 'Entrar'} maxWidth="480px">
+    <Modal isOpen={isOpen} onClose={onClose} title={mode === 'register' ? 'Criar Conta ALICERCE' : 'Acessar Conta'} maxWidth="480px">
       <div className="segrow" style={{ marginBottom: '14px' }}>
-        <div className={`seg ${mode === 'register' ? 'on' : ''}`} onClick={() => setMode('register')}>Cadastro</div>
-        <div className={`seg ${mode === 'login' ? 'on' : ''}`} onClick={() => setMode('login')}>Acessar Conta</div>
+        <div className={`seg ${mode === 'register' ? 'on' : ''}`} onClick={() => { setMode('register'); setErrorMessage(null); }}>Cadastro</div>
+        <div className={`seg ${mode === 'login' ? 'on' : ''}`} onClick={() => { setMode('login'); setErrorMessage(null); }}>Entrar</div>
       </div>
+
+      {errorMessage && (
+        <div style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid #EF4444', color: '#FCA5A5', padding: '8px 12px', borderRadius: '4px', fontSize: '11px', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <AlertCircle size={14} /> {errorMessage}
+        </div>
+      )}
 
       {mode === 'register' ? (
         <form onSubmit={handleRegister} className="form-wrap" style={{ padding: 0 }}>
@@ -110,22 +140,22 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLoginSu
             <input type="password" placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} required />
           </div>
 
-          <button type="submit" className="btn primary" style={{ width: '100%', justifyContent: 'center', marginTop: '4px' }}>
-            <CheckCircle2 size={14} /> Finalizar Cadastro Seguro
+          <button type="submit" disabled={loading} className="btn primary" style={{ width: '100%', justifyContent: 'center', marginTop: '4px' }}>
+            {loading ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle2 size={14} />} Finalizar Cadastro Seguro
           </button>
         </form>
       ) : (
-        <form onSubmit={handleRegister} className="form-wrap" style={{ padding: 0 }}>
+        <form onSubmit={handleLogin} className="form-wrap" style={{ padding: 0 }}>
           <div className="field">
             <label>E-mail Cadastrado</label>
-            <input type="email" placeholder="seuemail@empresa.com.br" required />
+            <input type="email" placeholder="seuemail@empresa.com.br" value={email} onChange={e => setEmail(e.target.value)} required />
           </div>
           <div className="field">
             <label>Senha</label>
-            <input type="password" placeholder="••••••••" required />
+            <input type="password" placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} required />
           </div>
-          <button type="submit" className="btn primary" style={{ width: '100%', justifyContent: 'center', marginTop: '4px' }}>
-            Entrar no ALICERCE
+          <button type="submit" disabled={loading} className="btn primary" style={{ width: '100%', justifyContent: 'center', marginTop: '4px' }}>
+            {loading ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle2 size={14} />} Entrar no ALICERCE
           </button>
         </form>
       )}

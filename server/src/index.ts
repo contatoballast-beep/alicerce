@@ -194,6 +194,19 @@ app.post('/api/feed/posts', async (req, res) => {
   }
 });
 
+app.post('/api/feed/posts/:id/like', async (req, res) => {
+  try {
+    const postId = req.params.id;
+    await db.execute({
+      sql: "UPDATE posts SET likes_count = likes_count + 1 WHERE id = ?",
+      args: [postId]
+    });
+    res.json({ success: true, postId });
+  } catch (err: any) {
+    res.status(500).json({ error: 'Erro ao curtir publicação' });
+  }
+});
+
 /* ==========================================
    3. OPPORTUNITIES & PROPOSALS ROUTES
    ========================================== */
@@ -245,6 +258,36 @@ app.get('/api/opportunities', async (req, res) => {
   }
 });
 
+app.post('/api/opportunities', async (req, res) => {
+  try {
+    const { title, description, category, specialty, city, state, budgetMin, budgetMax, ownerId, ownerName, ownerAvatar } = req.body;
+    const oppId = `opp_${Date.now()}`;
+
+    await db.execute({
+      sql: `INSERT INTO opportunities (id, title, description, category, specialty, city, state, budget_min, budget_max, owner_id, owner_name, owner_avatar, status, proposals_count, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'aberto', 0, 'Hoje')`,
+      args: [
+        oppId,
+        title,
+        description,
+        category || 'Obras e Projetos',
+        specialty || 'Engenharia Civil',
+        city || 'São Paulo',
+        state || 'SP',
+        budgetMin || 10000,
+        budgetMax || 50000,
+        ownerId || 'usr_curr',
+        ownerName || 'Eng. Roberto Silva',
+        ownerAvatar || 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=150&auto=format&fit=crop&q=80'
+      ]
+    });
+
+    res.status(201).json({ id: oppId, title, status: 'aberto' });
+  } catch (err: any) {
+    res.status(500).json({ error: 'Erro ao criar oportunidade' });
+  }
+});
+
 app.post('/api/opportunities/:id/proposals', async (req, res) => {
   try {
     const oppId = req.params.id;
@@ -269,6 +312,12 @@ app.post('/api/opportunities/:id/proposals', async (req, res) => {
         'em_negociacao',
         'Agora mesmo'
       ]
+    });
+
+    // Update count in opportunity
+    await db.execute({
+      sql: "UPDATE opportunities SET proposals_count = proposals_count + 1 WHERE id = ?",
+      args: [oppId]
     });
 
     res.status(201).json({ id: propId, opportunityId: oppId, status: 'em_negociacao' });
@@ -334,6 +383,51 @@ app.get('/api/messages/:threadId', async (req, res) => {
     res.json(result.rows);
   } catch (err: any) {
     res.status(500).json({ error: 'Erro ao carregar mensagens' });
+  }
+});
+
+app.post('/api/messages', async (req, res) => {
+  try {
+    const { threadId, senderId, senderName, receiverId, text, attachmentUrl } = req.body;
+    const msgId = `msg_${Date.now()}`;
+    const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+    await db.execute({
+      sql: `INSERT INTO messages (id, sender_id, sender_name, receiver_id, text, attachment_url, timestamp, read)
+            VALUES (?, ?, ?, ?, ?, ?, ?, 1)`,
+      args: [
+        msgId,
+        senderId || 'usr_curr',
+        senderName || 'Eng. Roberto Silva',
+        receiverId || 'usr_camila',
+        text,
+        attachmentUrl || null,
+        timestamp
+      ]
+    });
+
+    const msgObj = {
+      id: msgId,
+      threadId,
+      senderId: senderId || 'usr_curr',
+      senderName: senderName || 'Eng. Roberto Silva',
+      receiverId: receiverId || 'usr_camila',
+      text,
+      attachmentUrl,
+      timestamp,
+      read: true
+    };
+
+    // Broadcast through WebSocket
+    wss.clients.forEach(client => {
+      if (client.readyState === WebSocket.OPEN) {
+        client.send(JSON.stringify({ type: 'NEW_MESSAGE', data: msgObj }));
+      }
+    });
+
+    res.status(201).json(msgObj);
+  } catch (err: any) {
+    res.status(500).json({ error: 'Erro ao salvar mensagem' });
   }
 });
 

@@ -141,6 +141,7 @@ export interface ConstructionProject {
 
 export interface ChatMessage {
   id: string;
+  threadId?: string;
   senderId: string;
   senderName: string;
   receiverId: string;

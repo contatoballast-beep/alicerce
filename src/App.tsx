@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { LocalApiService } from './services/api';
-import { UserProfile, Post, Opportunity, Proposal, ConstructionProject, AdCampaign, ModerationItem, UserRole } from './types';
+import { RealApiClient } from './services/realApiClient';
+import { UserProfile, Post, Opportunity, Proposal, ConstructionProject, AdCampaign, ModerationItem, UserRole, ChatMessage } from './types';
 
 // Layout & Components
 import { Navbar } from './components/Navbar';
@@ -31,10 +32,16 @@ export const App: React.FC = () => {
   const [projects, setProjects] = useState<ConstructionProject[]>(LocalApiService.getProjects());
   const [campaigns, setCampaigns] = useState<AdCampaign[]>(LocalApiService.getCampaigns());
   const [moderationItems, setModerationItems] = useState<ModerationItem[]>(LocalApiService.getModerationQueue());
+  const [chatMessages, setChatMessages] = useState<Record<string, ChatMessage[]>>({
+    'thread_1': LocalApiService.getMessages('thread_1'),
+    'thread_2': LocalApiService.getMessages('thread_2'),
+    'thread_3': LocalApiService.getMessages('thread_3'),
+  });
 
   const [activeTab, setActiveTab] = useState<string>('feed');
   const [activeThreadId, setActiveThreadId] = useState<string>('thread_1');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [serverOnline, setServerOnline] = useState<boolean | null>(null);
 
   // Modal States
   const [authModalOpen, setAuthModalOpen] = useState(false);
@@ -52,20 +59,65 @@ export const App: React.FC = () => {
     setTimeout(() => setToastMessage(null), 3500);
   };
 
+  // Synchronize with real backend on load and WebSocket
+  useEffect(() => {
+    // 1. Health check & Initial fetch
+    const syncBackendData = async () => {
+      const health = await RealApiClient.checkHealth();
+      setServerOnline(health.ok);
+
+      if (health.ok) {
+        console.log('[ALICERCE] Backend conectado com sucesso!', health);
+        const [fetchedPosts, fetchedOpps, fetchedCamps] = await Promise.all([
+          RealApiClient.getPosts(),
+          RealApiClient.getOpportunities(),
+          RealApiClient.getCampaigns(),
+        ]);
+        if (fetchedPosts?.length) setPosts(fetchedPosts);
+        if (fetchedOpps?.length) setOpportunities(fetchedOpps);
+        if (fetchedCamps?.length) setCampaigns(fetchedCamps);
+      }
+    };
+
+    syncBackendData();
+
+    // 2. Connect to WebSocket for Real-time messaging
+    const ws = RealApiClient.connectWebSocket((payload) => {
+      if (payload.type === 'NEW_MESSAGE' && payload.data) {
+        const newMsg = payload.data as ChatMessage;
+        const targetThread = newMsg.threadId || 'thread_1';
+        setChatMessages((prev) => ({
+          ...prev,
+          [targetThread]: [...(prev[targetThread] || []), newMsg],
+        }));
+        if (newMsg.senderId !== currentUser.id) {
+          showToast(`💬 Nova mensagem de ${newMsg.senderName}`);
+        }
+      }
+    });
+
+    return () => {
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.close();
+      }
+    };
+  }, []);
+
   const handleSwitchRole = (role: UserRole) => {
     const updated = LocalApiService.switchRole(role);
     setCurrentUser(updated);
     showToast(`Perfil alterado para: ${role.toUpperCase()}`);
   };
 
-  const handleLikePost = (postId: string) => {
-    const updated = LocalApiService.toggleLikePost(postId);
+  const handleLikePost = async (postId: string) => {
+    const updated = await RealApiClient.likePost(postId);
     setPosts(updated);
   };
 
-  const handleAddPost = (postData: any) => {
-    const newPost = LocalApiService.addPost(postData);
-    setPosts(LocalApiService.getPosts());
+  const handleAddPost = async (postData: any) => {
+    await RealApiClient.createPost(postData);
+    const updatedPosts = await RealApiClient.getPosts();
+    setPosts(updatedPosts);
     showToast("Obra publicada com sucesso! Chancela de Carimbo Técnico emitida.");
   };
 
@@ -80,15 +132,17 @@ export const App: React.FC = () => {
     setOppDetailModalOpen(true);
   };
 
-  const handleSubmitProposal = (oppId: string, proposalData: any) => {
-    const updatedOpps = LocalApiService.addProposal(oppId, proposalData);
+  const handleSubmitProposal = async (oppId: string, proposalData: any) => {
+    await RealApiClient.submitProposal(oppId, proposalData);
+    const updatedOpps = await RealApiClient.getOpportunities();
     setOpportunities(updatedOpps);
     showToast("Proposta técnica e orçamentária enviada com sucesso!");
   };
 
-  const handleCreateCampaign = (campData: any) => {
-    const newCamp = LocalApiService.addCampaign(campData);
-    setCampaigns(LocalApiService.getCampaigns());
+  const handleCreateCampaign = async (campData: any) => {
+    const newCamp = await RealApiClient.createCampaign(campData);
+    const updatedCamps = await RealApiClient.getCampaigns();
+    setCampaigns(updatedCamps);
     setSelectedCampaignForCheckout(newCamp);
     setCheckoutModalOpen(true);
     showToast("Campanha criada! Efetue o pagamento Pix para ativar.");
@@ -100,8 +154,12 @@ export const App: React.FC = () => {
     showToast("Pagamento Pix recebido! NFS-e emitida e anúncio impulsionado.");
   };
 
-  const handleSendMessage = (threadId: string, text: string, attachmentUrl?: string) => {
-    LocalApiService.sendMessage(threadId, text, attachmentUrl);
+  const handleSendMessage = async (threadId: string, text: string, attachmentUrl?: string) => {
+    const newMsg = await RealApiClient.sendMessage(threadId, text, currentUser, attachmentUrl);
+    setChatMessages(prev => ({
+      ...prev,
+      [threadId]: [...(prev[threadId] || []), newMsg]
+    }));
     showToast("Mensagem enviada no chat!");
   };
 
@@ -138,6 +196,17 @@ export const App: React.FC = () => {
         unreadMessagesCount={1}
       />
 
+      {/* Server Connectivity Banner */}
+      <div style={{ background: 'var(--paper)', borderBottom: '1px solid var(--steel-line)', padding: '4px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '11px', color: 'var(--steel)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', background: serverOnline ? '#10B981' : '#F59E0B' }}></span>
+          <span>{serverOnline ? 'Backend API & Turso DB: Conectados' : 'Modo Híbrido: Local + Fallback Resiliente Ativo'}</span>
+        </div>
+        <div className="mono" style={{ fontSize: '10px' }}>
+          Realtime WebSocket: {serverOnline ? 'Online (WSS)' : 'Pronto'}
+        </div>
+      </div>
+
       {/* Main View Router */}
       <main style={{ flex: 1 }}>
         {activeTab === 'feed' && (
@@ -173,7 +242,7 @@ export const App: React.FC = () => {
             currentUser={currentUser}
             activeThreadId={activeThreadId}
             onSelectThread={setActiveThreadId}
-            getMessages={(tId) => LocalApiService.getMessages(tId)}
+            getMessages={(tId) => chatMessages[tId] || LocalApiService.getMessages(tId)}
             onSendMessage={handleSendMessage}
           />
         )}
