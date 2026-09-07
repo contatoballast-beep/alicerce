@@ -55,7 +55,7 @@ export const CreateOpportunityModal: React.FC<CreateOpportunityModalProps> = ({
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Publicar Demanda / Oportunidade de Obra" maxWidth="560px">
+    <Modal isOpen={isOpen} onClose={onClose} title="Publicar Demanda / Oportunidade de Obra" maxWidth="580px">
       <form onSubmit={handleSubmit} className="form-wrap" style={{ padding: 0 }}>
         
         <div className="field">
@@ -65,18 +65,16 @@ export const CreateOpportunityModal: React.FC<CreateOpportunityModalProps> = ({
             placeholder="Ex: Projeto Estrutural para Edifício Residencial de 4 Pavimentos" 
             value={title}
             onChange={e => setTitle(e.target.value)}
-            required
+            required 
           />
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
           <div className="field">
-            <label>Categoria</label>
+            <label>Categoria de Serviço</label>
             <select 
               value={category}
               onChange={e => setCategory(e.target.value)}
-              className="input-field"
-              style={{ background: 'var(--white)' }}
             >
               <option value="Projetos Estruturais & Fundações">Projetos Estruturais & Fundações</option>
               <option value="Projetos de Arquitetura">Projetos de Arquitetura</option>
@@ -102,7 +100,7 @@ export const CreateOpportunityModal: React.FC<CreateOpportunityModalProps> = ({
         <div className="field">
           <label>Descrição Detalhada do Escopo e Necessidade *</label>
           <textarea 
-            rows={3} 
+            rows={4} 
             placeholder="Descreva a metragem quadrada, características do terreno, localização aproximada e documentação disponível..."
             value={description}
             onChange={e => setDescription(e.target.value)}
@@ -110,11 +108,12 @@ export const CreateOpportunityModal: React.FC<CreateOpportunityModalProps> = ({
           />
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px' }}>
           <div className="field">
             <label>Orçamento Mín (R$)</label>
             <input 
               type="number" 
+              className="mono"
               value={budgetMin}
               onChange={e => setBudgetMin(Number(e.target.value))}
               required
@@ -124,15 +123,17 @@ export const CreateOpportunityModal: React.FC<CreateOpportunityModalProps> = ({
             <label>Orçamento Máx (R$)</label>
             <input 
               type="number" 
+              className="mono"
               value={budgetMax}
               onChange={e => setBudgetMax(Number(e.target.value))}
               required
             />
           </div>
           <div className="field">
-            <label>Prazo Estimado (Dias)</label>
+            <label>Prazo (Dias)</label>
             <input 
               type="number" 
+              className="mono"
               value={deadlineDays}
               onChange={e => setDeadlineDays(Number(e.target.value))}
               required
@@ -140,7 +141,7 @@ export const CreateOpportunityModal: React.FC<CreateOpportunityModalProps> = ({
           </div>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '8px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '10px' }}>
           <div className="field">
             <label>Cidade da Obra</label>
             <input 
@@ -162,8 +163,8 @@ export const CreateOpportunityModal: React.FC<CreateOpportunityModalProps> = ({
           </div>
         </div>
 
-        <button type="submit" disabled={loading} className="btn primary" style={{ width: '100%', justifyContent: 'center', marginTop: '6px' }}>
-          {loading ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />} Publicar Oportunidade no Ecossistema
+        <button type="submit" disabled={loading} className="btn primary" style={{ width: '100%', justifyContent: 'center', marginTop: '6px', padding: '10px 16px', fontSize: '13px' }}>
+          {loading ? <Loader2 size={15} className="animate-spin" /> : <Send size={15} />} Publicar Oportunidade no Ecossistema
         </button>
       </form>
     </Modal>

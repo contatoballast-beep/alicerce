@@ -40,69 +40,128 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
     <Modal isOpen={isOpen} onClose={onClose} title="Checkout Pix & Emissão de NFS-e" maxWidth="480px">
       
       {!paid ? (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           
-          <div className="titleblock" style={{ border: '1px solid var(--steel-line)', borderRadius: '3px' }}>
-            <div className="tb-field">
-              <div className="tb-label">Campanha Patrocinada</div>
-              <div className="tb-value">{campaign.title.substring(0, 30)}...</div>
+          <div style={{ 
+            background: 'var(--bg-subtle)', 
+            border: '1px solid var(--border-color)', 
+            borderRadius: 'var(--radius-md)',
+            padding: '14px 16px',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center'
+          }}>
+            <div>
+              <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>Campanha Patrocinada</div>
+              <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-heading)', marginTop: '2px' }}>{campaign.title.substring(0, 32)}...</div>
             </div>
-            <div className="tb-field">
-              <div className="tb-label">Valor a Pagar (Pix)</div>
-              <div className="tb-value" style={{ color: 'var(--line)', fontWeight: 700 }}>
+            <div style={{ textAlign: 'right' }}>
+              <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>Total Pix</div>
+              <div style={{ fontSize: '16px', fontWeight: 800, color: 'var(--primary-color)', fontFamily: 'var(--font-mono)' }}>
                 R$ {campaign.totalBudget.toFixed(2)}
               </div>
             </div>
           </div>
 
-          <div style={{ textAlign: 'center', padding: '6px 0' }}>
-            <img 
-              src={campaign.pixQrCode || `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(pixCode)}`} 
-              alt="QR Code Pix" 
-              style={{ width: '160px', height: '160px', margin: '0 auto 8px', background: '#FFF', padding: '6px', border: '1px solid var(--steel-line)', borderRadius: '3px', display: 'block' }} 
-            />
-            <p style={{ fontSize: '11px', color: 'var(--steel)', marginBottom: '10px' }}>
-              Escaneie o QR Code no app do seu banco ou copie a chave Pix Copia e Cola:
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ 
+              background: '#FFFFFF', 
+              padding: '12px', 
+              borderRadius: 'var(--radius-md)', 
+              display: 'inline-block',
+              border: '1px solid var(--border-color)',
+              boxShadow: 'var(--shadow-sm)',
+              marginBottom: '12px'
+            }}>
+              <img 
+                src={campaign.pixQrCode || `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(pixCode)}`} 
+                alt="QR Code Pix" 
+                style={{ width: '160px', height: '160px', display: 'block' }} 
+              />
+            </div>
+            
+            <p style={{ fontSize: '12.5px', color: 'var(--text-muted)', margin: '0 0 12px 0' }}>
+              Escaneie o QR Code no app do seu banco ou use a chave Pix Copia e Cola:
             </p>
 
-            <div style={{ display: 'flex', gap: '4px', marginBottom: '14px' }}>
-              <input type="text" className="input-field mono" value={pixCode} readOnly style={{ fontSize: '9.5px', textOverflow: 'ellipsis' }} />
-              <button onClick={handleCopyPix} className="btn ghost" style={{ flexShrink: 0, padding: '4px 10px', fontSize: '10px' }}>
-                <Copy size={12} /> {copied ? 'Copiado!' : 'Copiar'}
+            <div style={{ display: 'flex', gap: '6px', marginBottom: '14px' }}>
+              <input 
+                type="text" 
+                value={pixCode} 
+                readOnly 
+                style={{ fontSize: '11px', fontFamily: 'var(--font-mono)', textOverflow: 'ellipsis' }} 
+              />
+              <button onClick={handleCopyPix} className="btn ghost" style={{ flexShrink: 0, padding: '8px 14px', fontSize: '12px' }}>
+                <Copy size={13} /> {copied ? 'Copiado!' : 'Copiar'}
               </button>
             </div>
 
-            <div style={{ background: 'var(--paper)', padding: '8px 10px', borderRadius: '3px', fontSize: '10.5px', color: 'var(--steel)', marginBottom: '14px', textAlign: 'left', display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <ShieldCheck size={14} color="#059669" />
-              <span>Liberação imediata do anúncio no feed e emissão automática de NFS-e.</span>
+            <div style={{ 
+              background: 'rgba(16, 185, 129, 0.08)', 
+              border: '1px solid rgba(16, 185, 129, 0.2)',
+              padding: '10px 14px', 
+              borderRadius: 'var(--radius-md)', 
+              fontSize: '12px', 
+              color: '#059669', 
+              marginBottom: '16px', 
+              textAlign: 'left', 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: '8px',
+              fontWeight: 500
+            }}>
+              <ShieldCheck size={16} color="#059669" />
+              <span>Liberação imediata no feed com emissão automática de NFS-e.</span>
             </div>
 
-            <button onClick={handlePay} className="btn primary" style={{ width: '100%', justifyContent: 'center', fontSize: '11.5px', padding: '9px 12px' }}>
-              <CheckCircle2 size={14} /> Confirmar Pagamento Pix
+            <button onClick={handlePay} className="btn primary" style={{ width: '100%', justifyContent: 'center', fontSize: '13px', padding: '10px 16px' }}>
+              <CheckCircle2 size={16} /> Confirmar Pagamento Pix
             </button>
           </div>
 
         </div>
       ) : (
-        <div style={{ textAlign: 'center', padding: '24px 12px' }}>
-          <CheckCircle2 size={44} color="#059669" style={{ margin: '0 auto 10px' }} />
-          <h3 style={{ fontSize: '17px', fontWeight: 700, color: 'var(--ink)', marginBottom: '4px' }}>
+        <div style={{ textAlign: 'center', padding: '20px 8px' }}>
+          <div style={{ 
+            width: '56px', 
+            height: '56px', 
+            borderRadius: '50%', 
+            background: 'rgba(16, 185, 129, 0.12)', 
+            color: '#059669', 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center', 
+            margin: '0 auto 16px' 
+          }}>
+            <CheckCircle2 size={32} />
+          </div>
+
+          <h3 style={{ fontSize: '18px', fontWeight: 800, color: 'var(--text-heading)', margin: '0 0 6px 0', letterSpacing: '-0.02em' }}>
             Pagamento Pix Recebido!
           </h3>
-          <p style={{ fontSize: '12px', color: 'var(--graphite)', marginBottom: '16px', lineHeight: 1.4 }}>
-            Sua campanha está <strong>ATIVA</strong> e já sendo veiculada no Feed e no Catálogo ALICERCE para engenheiros e decisores.
+          <p style={{ fontSize: '13px', color: 'var(--text-body)', maxWidth: '380px', margin: '0 auto 20px', lineHeight: 1.5 }}>
+            Sua campanha está <strong>ATIVA</strong> e já sendo distribuída no Feed e no Catálogo ALICERCE.
           </p>
           
-          <div style={{ background: 'var(--paper)', border: '1px solid var(--steel-line)', padding: '10px', borderRadius: '3px', marginBottom: '18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', textAlign: 'left' }}>
-              <FileText size={16} color="var(--line)" />
+          <div style={{ 
+            background: 'var(--bg-subtle)', 
+            border: '1px solid var(--border-color)', 
+            padding: '12px 16px', 
+            borderRadius: 'var(--radius-md)', 
+            marginBottom: '20px', 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'space-between' 
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', textAlign: 'left' }}>
+              <FileText size={18} color="var(--primary-color)" />
               <div>
-                <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--ink)' }}>{campaign.invoiceNfseUrl || 'NFS-e_ALICERCE_2026.pdf'}</div>
-                <div className="mono" style={{ fontSize: '9px', color: 'var(--steel)' }}>Nota Fiscal de Serviço Eletrônica Emitida</div>
+                <div style={{ fontSize: '12.5px', fontWeight: 700, color: 'var(--text-heading)' }}>{campaign.invoiceNfseUrl || 'NFS-e_ALICERCE_2026.pdf'}</div>
+                <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Nota Fiscal Eletrônica Emitida com Sucesso</div>
               </div>
             </div>
-            <button onClick={() => alert("Download do PDF da NFS-e iniciado com sucesso.")} className="btn ghost" style={{ padding: '3px 8px', fontSize: '10px' }}>
-              <Download size={11} /> Baixar
+            <button onClick={() => alert("Download do PDF da NFS-e iniciado.")} className="btn ghost" style={{ padding: '6px 10px', fontSize: '11px' }}>
+              <Download size={13} /> Baixar
             </button>
           </div>
 

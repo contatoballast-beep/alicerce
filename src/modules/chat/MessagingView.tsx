@@ -78,42 +78,61 @@ export const MessagingView: React.FC<MessagingViewProps> = ({
   };
 
   return (
-    <div style={{ maxWidth: '1000px', margin: '0 auto', padding: '16px' }}>
+    <div style={{ maxWidth: '1080px', margin: '0 auto', padding: '20px 16px' }}>
       
       {/* View Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
+      <div style={{ 
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'space-between', 
+        marginBottom: '16px',
+        background: 'var(--bg-card)',
+        padding: '16px 20px',
+        borderRadius: 'var(--radius-lg)',
+        border: '1px solid var(--border-color)',
+        boxShadow: 'var(--shadow-sm)'
+      }}>
         <div>
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: '10px', color: 'var(--line)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+          <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--primary-color)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '2px' }}>
             CANAL DIRETO & NEGOCIAÇÕES TÉCNICAS
           </div>
-          <h2 style={{ fontSize: '19px', fontWeight: 700, color: 'var(--ink)' }}>
-            Mensagens e Chat em Tempo Real
+          <h2 style={{ fontSize: '18px', fontWeight: 800, color: 'var(--text-heading)', margin: 0, letterSpacing: '-0.02em' }}>
+            Mensagens em Tempo Real
           </h2>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', background: '#10B981' }}></span>
-          <span className="mono" style={{ fontSize: '10px', color: 'var(--steel)' }}>
-            WebSocket Conectado
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(16, 185, 129, 0.08)', padding: '6px 12px', borderRadius: 'var(--radius-full)', border: '1px solid rgba(16, 185, 129, 0.2)' }}>
+          <span style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', background: '#10B981', boxShadow: '0 0 6px #10B981' }}></span>
+          <span style={{ fontSize: '11.5px', fontWeight: 600, color: '#059669' }}>
+            WebSocket Ativo
           </span>
         </div>
       </div>
 
       {/* Main Chat Container */}
-      <div className="card" style={{ display: 'grid', gridTemplateColumns: threads.length > 0 ? '300px 1fr' : '1fr', minHeight: '560px', maxHeight: '72vh', overflow: 'hidden', padding: 0 }}>
+      <div className="card" style={{ 
+        display: 'grid', 
+        gridTemplateColumns: threads.length > 0 ? '320px 1fr' : '1fr', 
+        minHeight: '620px', 
+        height: '74vh', 
+        overflow: 'hidden', 
+        padding: 0,
+        border: '1px solid var(--border-color)',
+        borderRadius: 'var(--radius-lg)',
+        boxShadow: 'var(--shadow-card)'
+      }}>
         
         {/* Left Pane: Threads / Conversations */}
         {threads.length > 0 && (
-          <div style={{ borderRight: '1px solid var(--steel-line)', background: 'var(--paper)', display: 'flex', flexDirection: 'column' }}>
+          <div style={{ borderRight: '1px solid var(--border-color)', background: 'var(--bg-subtle)', display: 'flex', flexDirection: 'column' }}>
             
             {/* Search filter */}
-            <div style={{ padding: '12px', borderBottom: '1px solid var(--steel-line)' }}>
+            <div style={{ padding: '14px 16px', borderBottom: '1px solid var(--border-color)', background: 'var(--bg-card)' }}>
               <div style={{ position: 'relative' }}>
-                <Search size={13} style={{ position: 'absolute', left: '10px', top: '10px', color: 'var(--steel)' }} />
+                <Search size={14} style={{ position: 'absolute', left: '12px', top: '11px', color: 'var(--text-muted)' }} />
                 <input 
                   type="text" 
-                  className="input-field" 
-                  placeholder="Buscar conversa..." 
-                  style={{ paddingLeft: '28px', fontSize: '11px' }}
+                  placeholder="Buscar conversa ou colega..." 
+                  style={{ paddingLeft: '34px', fontSize: '12.5px', background: 'var(--bg-subtle)' }}
                   value={searchFilter}
                   onChange={e => setSearchFilter(e.target.value)}
                 />
@@ -129,39 +148,39 @@ export const MessagingView: React.FC<MessagingViewProps> = ({
                     key={t.id}
                     onClick={() => onSelectThread(t.id)}
                     style={{
-                      padding: '12px 14px',
-                      borderBottom: '1px solid var(--steel-line)',
-                      background: isSelected ? 'var(--white)' : 'transparent',
-                      borderLeft: isSelected ? '4px solid var(--line)' : '4px solid transparent',
+                      padding: '14px 16px',
+                      borderBottom: '1px solid var(--border-color)',
+                      background: isSelected ? 'var(--bg-card)' : 'transparent',
+                      borderLeft: isSelected ? '4px solid var(--primary-color)' : '4px solid transparent',
                       cursor: 'pointer',
-                      transition: 'background 0.15s ease'
+                      transition: 'all 0.15s ease'
                     }}
                   >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                       <div style={{ position: 'relative' }}>
                         <img 
                           src={t.participantAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150'} 
                           alt={t.participantName}
-                          style={{ width: '36px', height: '36px', borderRadius: '50%', objectFit: 'cover', border: '1px solid var(--steel-line)' }}
+                          style={{ width: '42px', height: '42px', borderRadius: '50%', objectFit: 'cover', border: '1px solid var(--border-color)' }}
                         />
-                        <span style={{ position: 'absolute', bottom: '0', right: '0', width: '9px', height: '9px', borderRadius: '50%', background: '#10B981', border: '1.5px solid #FFF' }}></span>
+                        <span style={{ position: 'absolute', bottom: '1px', right: '1px', width: '10px', height: '10px', borderRadius: '50%', background: '#10B981', border: '2px solid #FFF' }}></span>
                       </div>
 
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-                          <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--ink)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '2px' }}>
+                          <span style={{ fontSize: '13.5px', fontWeight: 700, color: 'var(--text-heading)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                             {t.participantName}
                           </span>
-                          <span className="mono" style={{ fontSize: '9px', color: 'var(--steel)' }}>
+                          <span style={{ fontSize: '10.5px', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
                             {t.lastMessageTime || ''}
                           </span>
                         </div>
 
-                        <div style={{ fontSize: '10px', color: 'var(--line)', fontWeight: 600, marginTop: '1px' }}>
+                        <div style={{ fontSize: '11px', color: 'var(--primary-color)', fontWeight: 600 }}>
                           {t.participantRole}
                         </div>
 
-                        <div style={{ fontSize: '11px', color: 'var(--steel)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginTop: '2px' }}>
+                        <div style={{ fontSize: '12px', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginTop: '3px' }}>
                           {t.lastMessage || 'Conversa iniciada'}
                         </div>
                       </div>
@@ -171,7 +190,7 @@ export const MessagingView: React.FC<MessagingViewProps> = ({
               })}
 
               {filteredThreads.length === 0 && (
-                <div style={{ padding: '24px 16px', textAlign: 'center', color: 'var(--steel)', fontSize: '11.5px' }}>
+                <div style={{ padding: '32px 16px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '12px' }}>
                   Nenhuma conversa encontrada para "{searchFilter}".
                 </div>
               )}
@@ -182,77 +201,87 @@ export const MessagingView: React.FC<MessagingViewProps> = ({
 
         {/* Right Pane: Active Chat Room */}
         {activeThread ? (
-          <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: 'var(--white)' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: 'var(--bg-card)' }}>
             
             {/* Active Chat Header */}
-            <div style={{ padding: '12px 18px', borderBottom: '1px solid var(--steel-line)', background: 'var(--paper)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--border-color)', background: 'var(--bg-card)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                 <img 
                   src={activeThread.participantAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150'} 
                   alt={activeThread.participantName}
-                  style={{ width: '38px', height: '38px', borderRadius: '50%', objectFit: 'cover', border: '1px solid var(--steel-line)' }}
+                  style={{ width: '40px', height: '40px', borderRadius: '50%', objectFit: 'cover', border: '1px solid var(--border-color)' }}
                 />
                 <div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <span style={{ fontSize: '13.5px', fontWeight: 700, color: 'var(--ink)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ fontSize: '14.5px', fontWeight: 700, color: 'var(--text-heading)' }}>
                       {activeThread.participantName}
                     </span>
-                    <span className="badge verified" style={{ fontSize: '9px', padding: '1px 5px' }}>
-                      <ShieldCheck size={10} /> Verificado
+                    <span style={{ 
+                      fontSize: '10.5px', 
+                      fontWeight: 600, 
+                      padding: '2px 8px', 
+                      borderRadius: 'var(--radius-full)', 
+                      background: 'rgba(16, 185, 129, 0.1)', 
+                      color: '#059669',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '4px'
+                    }}>
+                      <ShieldCheck size={11} /> Verificado
                     </span>
                   </div>
-                  <div style={{ fontSize: '10.5px', color: 'var(--steel)' }}>
+                  <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '2px' }}>
                     {activeThread.participantRole} • Canal Criptografado & Direto
                   </div>
                 </div>
               </div>
 
-              <div className="mono" style={{ fontSize: '10px', color: 'var(--line)', background: 'var(--white)', padding: '4px 8px', border: '1px solid var(--steel-line)', borderRadius: '3px' }}>
-                ALICERCE CHAT
+              <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--primary-color)', background: 'var(--primary-bg)', padding: '4px 10px', borderRadius: 'var(--radius-full)', border: '1px solid rgba(37, 99, 235, 0.15)' }}>
+                CHAT TÉCNICO
               </div>
             </div>
 
             {/* Quick Action Chips */}
-            <div style={{ padding: '6px 14px', background: 'var(--paper)', borderBottom: '1px solid var(--steel-line)', display: 'flex', gap: '6px', overflowX: 'auto' }}>
+            <div style={{ padding: '8px 16px', background: 'var(--bg-subtle)', borderBottom: '1px solid var(--border-color)', display: 'flex', gap: '8px', overflowX: 'auto' }}>
               <button 
                 onClick={() => handleQuickAction('Olá! Gostaria de solicitar a emissão de ART/RRT para os serviços técnicos acordados.')}
                 className="btn ghost" 
-                style={{ fontSize: '10px', padding: '3px 8px', whiteSpace: 'nowrap', background: 'var(--white)', borderColor: 'var(--steel-line)' }}
+                style={{ fontSize: '11px', padding: '4px 10px', whiteSpace: 'nowrap', background: 'var(--bg-card)' }}
               >
-                <FileText size={11} color="var(--line)" /> Solicitar ART / RRT
+                <FileText size={12} color="var(--primary-color)" /> Solicitar ART / RRT
               </button>
               <button 
                 onClick={() => handleQuickAction('Poderia me enviar o projeto executivo e memorial descritivo em PDF para análise?')}
                 className="btn ghost" 
-                style={{ fontSize: '10px', padding: '3px 8px', whiteSpace: 'nowrap', background: 'var(--white)', borderColor: 'var(--steel-line)' }}
+                style={{ fontSize: '11px', padding: '4px 10px', whiteSpace: 'nowrap', background: 'var(--bg-card)' }}
               >
-                <Building2 size={11} color="var(--line)" /> Solicitar Projeto / Memorial
+                <Building2 size={12} color="var(--primary-color)" /> Solicitar Memorial Técnico
               </button>
               <button 
                 onClick={() => handleQuickAction('Gostaria de agendar uma visita técnica no local da obra esta semana. Quais dias você tem disponibilidade?')}
                 className="btn ghost" 
-                style={{ fontSize: '10px', padding: '3px 8px', whiteSpace: 'nowrap', background: 'var(--white)', borderColor: 'var(--steel-line)' }}
+                style={{ fontSize: '11px', padding: '4px 10px', whiteSpace: 'nowrap', background: 'var(--bg-card)' }}
               >
-                <Calendar size={11} color="var(--line)" /> Agendar Visita Técnica
+                <Calendar size={12} color="var(--primary-color)" /> Agendar Visita na Obra
               </button>
               <button 
                 onClick={() => handleQuickAction('Pode me enviar uma proposta formal e estimativa orçamentária detalhada com prazos?')}
                 className="btn ghost" 
-                style={{ fontSize: '10px', padding: '3px 8px', whiteSpace: 'nowrap', background: 'var(--white)', borderColor: 'var(--steel-line)' }}
+                style={{ fontSize: '11px', padding: '4px 10px', whiteSpace: 'nowrap', background: 'var(--bg-card)' }}
               >
-                <DollarSign size={11} color="var(--line)" /> Solicitar Orçamento
+                <DollarSign size={12} color="var(--accent-color)" /> Solicitar Orçamento
               </button>
             </div>
 
             {/* Messages History */}
-            <div style={{ flex: 1, padding: '16px 20px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '12px', background: 'var(--paper-light, #F8FAFC)' }}>
+            <div style={{ flex: 1, padding: '20px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '14px', background: '#F8FAFC' }}>
               
               {currentMessages.length === 0 && (
-                <div style={{ margin: 'auto', textAlign: 'center', padding: '30px', color: 'var(--steel)' }}>
-                  <MessageSquare size={32} style={{ opacity: 0.4, marginBottom: '8px' }} />
-                  <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--ink)' }}>Início da Conversa</div>
-                  <div style={{ fontSize: '11px', marginTop: '4px' }}>
-                    Envie uma mensagem para iniciar as tratativas e negociações com {activeThread.participantName}.
+                <div style={{ margin: 'auto', textAlign: 'center', padding: '30px', color: 'var(--text-muted)' }}>
+                  <MessageSquare size={36} style={{ opacity: 0.3, marginBottom: '8px' }} />
+                  <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-heading)' }}>Início da Conversa</div>
+                  <div style={{ fontSize: '12px', marginTop: '4px' }}>
+                    Envie uma mensagem para alinhar detalhes técnicos ou solicitar propostas de {activeThread.participantName}.
                   </div>
                 </div>
               )}
@@ -273,21 +302,21 @@ export const MessagingView: React.FC<MessagingViewProps> = ({
                       <img 
                         src={activeThread.participantAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150'} 
                         alt="Avatar"
-                        style={{ width: '26px', height: '26px', borderRadius: '50%', objectFit: 'cover' }}
+                        style={{ width: '28px', height: '28px', borderRadius: '50%', objectFit: 'cover' }}
                       />
                     )}
 
                     <div 
                       style={{ 
-                        maxWidth: '72%', 
-                        background: isMe ? 'var(--line)' : 'var(--white)', 
-                        color: isMe ? '#FFFFFF' : 'var(--ink)', 
-                        border: isMe ? 'none' : '1px solid var(--steel-line)', 
-                        borderRadius: isMe ? '12px 12px 2px 12px' : '12px 12px 12px 2px', 
-                        padding: '10px 14px', 
-                        fontSize: '12px',
-                        lineHeight: '1.45',
-                        boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
+                        maxWidth: '70%', 
+                        background: isMe ? 'var(--primary-color)' : 'var(--bg-card)', 
+                        color: isMe ? '#FFFFFF' : 'var(--text-heading)', 
+                        border: isMe ? 'none' : '1px solid var(--border-color)', 
+                        borderRadius: isMe ? '16px 16px 4px 16px' : '16px 16px 16px 4px', 
+                        padding: '12px 16px', 
+                        fontSize: '13.5px',
+                        lineHeight: '1.5',
+                        boxShadow: '0 1px 3px rgba(0,0,0,0.06)'
                       }}
                     >
                       <div style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
@@ -297,18 +326,18 @@ export const MessagingView: React.FC<MessagingViewProps> = ({
                       {m.attachmentUrl && (
                         <div 
                           style={{ 
-                            marginTop: '8px', 
-                            fontSize: '10.5px', 
-                            padding: '6px 10px', 
-                            background: isMe ? 'rgba(255,255,255,0.18)' : 'var(--paper)', 
-                            borderRadius: '4px',
-                            border: isMe ? '1px solid rgba(255,255,255,0.3)' : '1px solid var(--steel-line)',
+                            marginTop: '10px', 
+                            fontSize: '11.5px', 
+                            padding: '8px 12px', 
+                            background: isMe ? 'rgba(255,255,255,0.2)' : 'var(--bg-subtle)', 
+                            borderRadius: 'var(--radius-sm)',
+                            border: isMe ? '1px solid rgba(255,255,255,0.3)' : '1px solid var(--border-color)',
                             display: 'flex', 
                             alignItems: 'center', 
-                            gap: '6px' 
+                            gap: '8px' 
                           }}
                         >
-                          <Paperclip size={12} />
+                          <Paperclip size={13} />
                           <span style={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                             {m.attachmentUrl}
                           </span>
@@ -316,12 +345,12 @@ export const MessagingView: React.FC<MessagingViewProps> = ({
                       )}
 
                       <div 
-                        className="mono" 
                         style={{ 
                           textAlign: 'right', 
-                          fontSize: '9px', 
+                          fontSize: '10px', 
                           opacity: isMe ? 0.8 : 0.6, 
-                          marginTop: '4px' 
+                          marginTop: '4px',
+                          fontFamily: 'var(--font-mono)'
                         }}
                       >
                         {m.timestamp}
@@ -336,13 +365,12 @@ export const MessagingView: React.FC<MessagingViewProps> = ({
 
             {/* Attachment Input Overlay */}
             {attachmentOpen && (
-              <div style={{ padding: '8px 14px', background: 'var(--paper)', borderTop: '1px solid var(--steel-line)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Paperclip size={13} color="var(--line)" />
+              <div style={{ padding: '10px 16px', background: 'var(--bg-subtle)', borderTop: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <Paperclip size={15} color="var(--primary-color)" />
                 <input 
                   type="text" 
-                  className="input-field" 
                   placeholder="Cole a URL ou nome do documento (ex: ART-SP2026-998124.pdf ou Projeto_Executivo.dwg)..."
-                  style={{ fontSize: '11px', flex: 1 }}
+                  style={{ fontSize: '12px', flex: 1, background: '#FFFFFF' }}
                   value={attachmentInput}
                   onChange={e => setAttachmentInput(e.target.value)}
                 />
@@ -350,64 +378,63 @@ export const MessagingView: React.FC<MessagingViewProps> = ({
                   type="button" 
                   onClick={() => setAttachmentOpen(false)}
                   className="btn ghost" 
-                  style={{ padding: '4px 8px' }}
+                  style={{ padding: '6px 10px' }}
                 >
-                  <X size={12} />
+                  <X size={14} />
                 </button>
               </div>
             )}
 
             {/* Input Bar */}
-            <form onSubmit={handleSend} style={{ padding: '12px 16px', borderTop: '1px solid var(--steel-line)', background: 'var(--white)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <form onSubmit={handleSend} style={{ padding: '14px 18px', borderTop: '1px solid var(--border-color)', background: 'var(--bg-card)', display: 'flex', alignItems: 'center', gap: '10px' }}>
               <button 
                 type="button" 
                 onClick={() => setAttachmentOpen(!attachmentOpen)}
                 className="btn ghost" 
-                style={{ padding: '8px 10px', color: attachmentOpen || attachmentInput ? 'var(--line)' : 'var(--steel)' }}
+                style={{ padding: '10px 12px', color: attachmentOpen || attachmentInput ? 'var(--primary-color)' : 'var(--text-muted)' }}
                 title="Anexar ART, Projeto ou Memorial"
               >
-                <Paperclip size={15} />
+                <Paperclip size={16} />
               </button>
 
               <input 
                 type="text" 
-                className="input-field" 
                 placeholder={`Escreva uma mensagem para ${activeThread.participantName}...`} 
                 value={inputText}
                 onChange={e => setInputText(e.target.value)}
-                style={{ fontSize: '12px' }}
+                style={{ fontSize: '13px', padding: '10px 14px' }}
               />
 
               <button 
                 type="submit" 
                 className="btn primary" 
-                style={{ padding: '8px 16px', fontSize: '11.5px', gap: '6px' }}
+                style={{ padding: '10px 18px', fontSize: '13px', gap: '6px' }}
                 disabled={!inputText.trim() && !attachmentInput.trim()}
               >
                 <span>Enviar</span>
-                <Send size={12} />
+                <Send size={13} />
               </button>
             </form>
 
           </div>
         ) : (
           /* Empty State when 0 threads exist */
-          <div style={{ padding: '60px 24px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'var(--white)' }}>
-            <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: 'var(--paper)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '16px', border: '1px solid var(--steel-line)' }}>
-              <MessageSquare size={28} color="var(--line)" />
+          <div style={{ padding: '64px 24px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-card)' }}>
+            <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: 'var(--primary-bg)', color: 'var(--primary-color)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '16px' }}>
+              <MessageSquare size={30} />
             </div>
 
-            <h3 style={{ fontSize: '17px', fontWeight: 700, color: 'var(--ink)', marginBottom: '6px' }}>
+            <h3 style={{ fontSize: '18px', fontWeight: 800, color: 'var(--text-heading)', marginBottom: '6px', letterSpacing: '-0.02em' }}>
               Nenhuma conversa ativa no momento
             </h3>
 
-            <p style={{ fontSize: '12px', color: 'var(--steel)', maxWidth: '440px', lineHeight: '1.5', marginBottom: '20px' }}>
+            <p style={{ fontSize: '13px', color: 'var(--text-muted)', maxWidth: '440px', lineHeight: '1.5', marginBottom: '24px' }}>
               Inicie uma conversa direta com engenheiros, arquitetos, construtoras e fornecedores de materiais clicando em <strong>"Conversar"</strong> no Feed ou no Diretório Profissional.
             </p>
 
             {onNavigateToDirectory && (
-              <button onClick={onNavigateToDirectory} className="btn primary" style={{ fontSize: '12px', padding: '10px 20px', gap: '8px' }}>
-                <Compass size={14} /> Explorar Diretório de Profissionais
+              <button onClick={onNavigateToDirectory} className="btn primary" style={{ fontSize: '13px', padding: '10px 22px', gap: '8px' }}>
+                <Compass size={16} /> Explorar Diretório de Profissionais
               </button>
             )}
           </div>

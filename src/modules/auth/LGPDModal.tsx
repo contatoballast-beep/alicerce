@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Modal } from '../../components/Modal';
 import { UserProfile } from '../../types';
-import { Download, Lock, CheckCircle2 } from 'lucide-react';
+import { Download, Lock, CheckCircle2, ShieldCheck } from 'lucide-react';
 
 interface LGPDModalProps {
   isOpen: boolean;
@@ -25,28 +25,49 @@ export const LGPDModal: React.FC<LGPDModalProps> = ({ isOpen, onClose, currentUs
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Centro de Privacidade LGPD" maxWidth="480px">
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
         
-        <div className="titleblock" style={{ border: '1px solid var(--steel-line)', borderRadius: '3px' }}>
-          <div className="tb-field">
-            <div className="tb-label">Titular</div>
-            <div className="tb-value">{currentUser.name}</div>
+        <div style={{ 
+          background: 'var(--bg-subtle)', 
+          border: '1px solid var(--border-color)', 
+          borderRadius: 'var(--radius-md)', 
+          padding: '14px 16px',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center'
+        }}>
+          <div>
+            <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>Titular dos Dados</div>
+            <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-heading)', marginTop: '2px' }}>{currentUser.name}</div>
           </div>
-          <div className="tb-field">
-            <div className="tb-label">Consentimento</div>
-            <div className="tb-value" style={{ color: 'var(--accent)' }}>ATIVO</div>
+          <div style={{ textAlign: 'right' }}>
+            <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>Consentimento</div>
+            <div style={{ 
+              fontSize: '11.5px', 
+              fontWeight: 700, 
+              color: '#059669', 
+              background: 'rgba(16, 185, 129, 0.1)', 
+              padding: '2px 8px', 
+              borderRadius: 'var(--radius-full)',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '4px',
+              marginTop: '2px'
+            }}>
+              <ShieldCheck size={12} /> ATIVO
+            </div>
           </div>
         </div>
 
-        <div className="card" style={{ padding: '12px' }}>
-          <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--ink)', marginBottom: '4px' }}>
-            Portabilidade dos Dados (JSON)
+        <div className="card" style={{ padding: '16px' }}>
+          <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-heading)', marginBottom: '4px' }}>
+            Portabilidade dos Dados Pessoais (JSON)
           </div>
-          <p style={{ fontSize: '11px', color: 'var(--steel)', marginBottom: '10px' }}>
-            Faça o download integral dos seus registros, publicações e histórico em formato estruturado.
+          <p style={{ fontSize: '12.5px', color: 'var(--text-muted)', marginBottom: '14px', lineHeight: 1.5 }}>
+            Faça o download integral dos seus registros de ART/RRT, obras cadastradas e histórico de mensagens em formato estruturado (Lei nº 13.709/2018).
           </p>
-          <button onClick={handleExportData} className="btn ghost" style={{ width: '100%', justifyContent: 'center', fontSize: '10px' }}>
-            <Download size={12} /> {downloadDone ? 'Re-exportar JSON' : 'Exportar Meus Dados'}
+          <button onClick={handleExportData} className="btn ghost" style={{ width: '100%', justifyContent: 'center', fontSize: '12px', padding: '10px' }}>
+            <Download size={14} /> {downloadDone ? 'Re-exportar Arquivo JSON' : 'Exportar Meus Dados'}
           </button>
         </div>
 

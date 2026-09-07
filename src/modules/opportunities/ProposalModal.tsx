@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Modal } from '../../components/Modal';
 import { UserProfile, Opportunity } from '../../types';
-import { Send } from 'lucide-react';
+import { Send, FileText } from 'lucide-react';
 
 interface ProposalModalProps {
   isOpen: boolean;
@@ -39,38 +39,53 @@ export const ProposalModal: React.FC<ProposalModalProps> = ({
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Enviar Proposta Técnica" maxWidth="500px">
+    <Modal isOpen={isOpen} onClose={onClose} title="Submeter Proposta Técnica" maxWidth="520px">
       <form onSubmit={handleSubmit} className="form-wrap" style={{ padding: 0 }}>
         
-        <div className="titleblock" style={{ border: '1px solid var(--steel-line)', borderRadius: '3px' }}>
-          <div className="tb-field">
-            <div className="tb-label">Oportunidade</div>
-            <div className="tb-value">{opportunity.title.substring(0, 25)}...</div>
+        <div style={{ 
+          background: 'var(--bg-subtle)', 
+          border: '1px solid var(--border-color)', 
+          borderRadius: 'var(--radius-md)', 
+          padding: '12px 16px',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: '14px'
+        }}>
+          <div>
+            <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>Demanda / Obra</div>
+            <div style={{ fontSize: '13.5px', fontWeight: 700, color: 'var(--text-heading)', marginTop: '2px' }}>{opportunity.title.substring(0, 30)}...</div>
           </div>
-          <div className="tb-field">
-            <div className="tb-label">Proponente</div>
-            <div className="tb-value">{currentUser.name}</div>
+          <div style={{ textAlign: 'right' }}>
+            <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>Proponente</div>
+            <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--primary-color)' }}>{currentUser.name}</div>
           </div>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
           <div className="field">
-            <label>Valor da Proposta (R$)</label>
+            <label>Valor da Proposta (R$) *</label>
             <input type="number" className="mono" placeholder="58000" value={value} onChange={e => setValue(e.target.value)} required />
           </div>
           <div className="field">
-            <label>Prazo (Dias)</label>
+            <label>Prazo de Entrega (Dias) *</label>
             <input type="number" className="mono" placeholder="30" value={deadlineDays} onChange={e => setDeadlineDays(e.target.value)} required />
           </div>
         </div>
 
         <div className="field">
-          <label>Memorial de Escopo e Metodologia</label>
-          <textarea placeholder="Detalhe os entregáveis, softwares de projeto (Revit/TQS) e garantias..." value={scopeDescription} onChange={e => setScopeDescription(e.target.value)} required />
+          <label>Memorial de Escopo e Metodologia Executiva *</label>
+          <textarea 
+            rows={4}
+            placeholder="Detalhe os entregáveis técnicos, softwares utilizados (Revit, TQS, AltoQi) e garantias de conformidade ABNT..." 
+            value={scopeDescription} 
+            onChange={e => setScopeDescription(e.target.value)} 
+            required 
+          />
         </div>
 
-        <button type="submit" className="btn primary" style={{ width: '100%', justifyContent: 'center' }}>
-          <Send size={12} /> Submeter Proposta
+        <button type="submit" className="btn primary" style={{ width: '100%', justifyContent: 'center', marginTop: '6px', padding: '10px 16px', fontSize: '13px' }}>
+          <Send size={14} /> Submeter Proposta Técnica
         </button>
       </form>
     </Modal>

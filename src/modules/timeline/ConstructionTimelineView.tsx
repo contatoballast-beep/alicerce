@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { ConstructionProject, ConstructionMilestone, UserProfile, TimelinePhase } from '../../types';
-import { HardHat, CheckCircle2, Clock, Plus, Building2, Calendar, DollarSign, Image as ImageIcon } from 'lucide-react';
-
+import { HardHat, CheckCircle2, Clock, Plus, Building2, Calendar, DollarSign, Image as ImageIcon, MapPin, UserCheck, ShieldCheck } from 'lucide-react';
 import { LocalApiService } from '../../services/api';
 
 interface ConstructionTimelineViewProps {
@@ -30,7 +29,7 @@ export const ConstructionTimelineView: React.FC<ConstructionTimelineViewProps> =
   const [mDesc, setMDesc] = useState('');
   const [mCost, setMCost] = useState('50000');
   const [mProgress, setMProgress] = useState('100');
-  const [mPhoto, setMPhoto] = useState('https://images.unsplash.com/photo-1541888946425-d0fbb186a5b7?w=600&auto=format&fit=crop&q=80');
+  const [mPhoto, setMPhoto] = useState('https://images.unsplash.com/photo-1541888946425-d0fbb186a5b7?w=600');
 
   const selectedProject = projectList.find(p => p.id === selectedProjectId) || projectList[0] || null;
 
@@ -95,33 +94,37 @@ export const ConstructionTimelineView: React.FC<ConstructionTimelineViewProps> =
   };
 
   return (
-    <div style={{ maxWidth: '680px', margin: '0 auto', padding: '20px 16px' }}>
+    <div style={{ maxWidth: '800px', margin: '0 auto', padding: '24px 16px' }}>
       
       {/* Title & Top Action */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
         <div>
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: '10.5px', color: 'var(--line)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-            ACOMPANHAMENTO TÉCNICO & DIÁRIO DE OBRA
-          </div>
-          <h2 style={{ fontSize: '20px', fontWeight: 700, color: 'var(--ink)' }}>
+          <h2 style={{ fontSize: '22px', fontWeight: 800, color: '#0F172A', letterSpacing: '-0.02em' }}>
             Diário de Obras Digital
           </h2>
+          <p style={{ fontSize: '13px', color: '#64748B', marginTop: '3px' }}>
+            Registro fotográfico, controle físico-financeiro e rastreabilidade técnica por ART/CREA.
+          </p>
         </div>
 
-        <button onClick={() => setCreatingProject(!creatingProject)} className="btn primary" style={{ fontSize: '11px' }}>
-          <Plus size={13} /> {creatingProject ? 'Cancelar' : 'Nova Obra / Projeto'}
+        <button 
+          onClick={() => setCreatingProject(!creatingProject)} 
+          className="btn primary" 
+          style={{ fontSize: '12px', padding: '9px 16px', gap: '6px' }}
+        >
+          <Plus size={14} /> {creatingProject ? 'Cancelar' : 'Nova Obra'}
         </button>
       </div>
 
       {/* Project Creation Form */}
       {creatingProject && (
-        <form onSubmit={handleCreateProject} className="card" style={{ padding: '16px', marginBottom: '18px', display: 'flex', flexDirection: 'column', gap: '12px', border: '2px solid var(--accent)' }}>
-          <div style={{ fontWeight: 700, fontSize: '13px', color: 'var(--ink)', borderBottom: '1px solid var(--steel-line)', paddingBottom: '6px' }}>
+        <form onSubmit={handleCreateProject} className="card" style={{ padding: '20px', marginBottom: '22px', display: 'flex', flexDirection: 'column', gap: '14px', border: '1.5px solid #3B82F6' }}>
+          <div style={{ fontWeight: 700, fontSize: '14.5px', color: '#0F172A', borderBottom: '1px solid #E2E8F0', paddingBottom: '8px' }}>
             Iniciar Novo Livro de Diário de Obra
           </div>
 
-          <div className="field">
-            <label style={{ fontSize: '10px', fontFamily: 'var(--font-mono)', color: 'var(--steel)' }}>Nome / Título da Obra *</label>
+          <div>
+            <label style={{ fontSize: '11.5px', fontWeight: 600, color: '#475569', display: 'block', marginBottom: '4px' }}>Nome / Título da Obra *</label>
             <input 
               type="text" 
               className="input-field" 
@@ -132,9 +135,9 @@ export const ConstructionTimelineView: React.FC<ConstructionTimelineViewProps> =
             />
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-            <div className="field">
-              <label style={{ fontSize: '10px', fontFamily: 'var(--font-mono)', color: 'var(--steel)' }}>Localização / Endereço</label>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+            <div>
+              <label style={{ fontSize: '11.5px', fontWeight: 600, color: '#475569', display: 'block', marginBottom: '4px' }}>Localização / Endereço</label>
               <input 
                 type="text" 
                 className="input-field" 
@@ -143,19 +146,19 @@ export const ConstructionTimelineView: React.FC<ConstructionTimelineViewProps> =
               />
             </div>
 
-            <div className="field">
-              <label style={{ fontSize: '10px', fontFamily: 'var(--font-mono)', color: 'var(--steel)' }}>Orçamento Total Estimado (R$)</label>
+            <div>
+              <label style={{ fontSize: '11.5px', fontWeight: 600, color: '#475569', display: 'block', marginBottom: '4px' }}>Orçamento Total Estimado (R$)</label>
               <input 
                 type="number" 
-                className="input-field mono" 
+                className="input-field" 
                 value={projBudget} 
                 onChange={e => setProjBudget(e.target.value)} 
               />
             </div>
           </div>
 
-          <div className="field">
-            <label style={{ fontSize: '10px', fontFamily: 'var(--font-mono)', color: 'var(--steel)' }}>Responsável Técnico (RT)</label>
+          <div>
+            <label style={{ fontSize: '11.5px', fontWeight: 600, color: '#475569', display: 'block', marginBottom: '4px' }}>Responsável Técnico (RT)</label>
             <input 
               type="text" 
               className="input-field" 
@@ -164,61 +167,112 @@ export const ConstructionTimelineView: React.FC<ConstructionTimelineViewProps> =
             />
           </div>
 
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
-            <button type="button" onClick={() => setCreatingProject(false)} className="btn ghost" style={{ fontSize: '11px' }}>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '6px' }}>
+            <button type="button" onClick={() => setCreatingProject(false)} className="btn ghost">
               Cancelar
             </button>
-            <button type="submit" className="btn primary" style={{ fontSize: '11px' }}>
-              <CheckCircle2 size={13} /> Criar Livro de Obra
+            <button type="submit" className="btn accent">
+              Criar Livro de Obra
             </button>
           </div>
         </form>
       )}
 
-      {/* Active Project Card */}
-      {selectedProject ? (
-        <>
-          <div className="card" style={{ padding: '16px', marginBottom: '18px', borderLeft: '4px solid var(--accent)' }}>
-            <div className="tb-label" style={{ color: 'var(--line)' }}>DIÁRIO DE OBRA DIGITAL — PROJETO ATIVO</div>
-            <h2 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--ink)', margin: '2px 0 4px' }}>
-              {selectedProject.title}
-            </h2>
-            <div style={{ fontSize: '11.5px', color: 'var(--steel)', marginBottom: '10px' }}>
-              {selectedProject.location} • RT: <strong>{selectedProject.responsavelTecnico}</strong> ({selectedProject.creaNumber})
-            </div>
-
-            <div className="titleblock">
-              <div className="tb-field">
-                <div className="tb-label">Orçamento Total</div>
-                <div className="tb-value" style={{ color: 'var(--line)' }}>R$ {selectedProject.totalBudget.toLocaleString('pt-BR')}</div>
-              </div>
-              <div className="tb-field">
-                <div className="tb-label">Progresso Geral</div>
-                <div className="tb-value" style={{ color: 'var(--accent)', fontWeight: 700 }}>{selectedProject.overallProgress}%</div>
-              </div>
-              <div className="tb-field">
-                <div className="tb-label">Registros</div>
-                <div className="tb-value">{selectedProject.milestones?.length || 0} lançamentos</div>
-              </div>
-            </div>
-          </div>
-
-          {/* Section for Milestones */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
-            <h3 style={{ fontSize: '14px', fontWeight: 700, color: 'var(--ink)' }}>Registros de Execução & Ocorrências</h3>
-            <button onClick={() => setAddingMilestone(!addingMilestone)} className="btn primary" style={{ fontSize: '10.5px', padding: '5px 10px' }}>
-              <Plus size={12} /> {addingMilestone ? 'Cancelar' : 'Novo Lançamento'}
+      {/* Projects Tabs (if more than 1) */}
+      {projectList.length > 1 && (
+        <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', marginBottom: '16px' }}>
+          {projectList.map(p => (
+            <button
+              key={p.id}
+              onClick={() => setSelectedProjectId(p.id)}
+              className={`chip ${selectedProject?.id === p.id ? 'on' : ''}`}
+            >
+              {p.title}
             </button>
+          ))}
+        </div>
+      )}
+
+      {/* Selected Project Card */}
+      {selectedProject ? (
+        <div>
+          <div className="card" style={{ padding: '20px', marginBottom: '20px', borderRadius: '14px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '12px' }}>
+              <div>
+                <span className="badge" style={{ background: '#ECFDF5', color: '#047857', borderColor: '#A7F3D0', marginBottom: '6px' }}>
+                  ✓ PROJETO ATIVO
+                </span>
+                <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#0F172A', marginTop: '4px' }}>
+                  {selectedProject.title}
+                </h3>
+                <div style={{ fontSize: '12px', color: '#64748B', display: 'flex', alignItems: 'center', gap: '6px', marginTop: '4px' }}>
+                  <MapPin size={13} /> {selectedProject.location} • RT: {selectedProject.responsavelTecnico} ({selectedProject.creaNumber})
+                </div>
+              </div>
+
+              <button 
+                onClick={() => setAddingMilestone(!addingMilestone)} 
+                className="btn accent" 
+                style={{ fontSize: '12px', padding: '8px 16px', gap: '6px' }}
+              >
+                <Plus size={14} /> Novo Registro
+              </button>
+            </div>
+
+            {/* Overall Progress & Budget Strip */}
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+              gap: '12px',
+              marginTop: '16px',
+              padding: '14px',
+              background: '#F8FAFC',
+              borderRadius: '10px',
+              border: '1px solid #E2E8F0'
+            }}>
+              <div>
+                <div style={{ fontSize: '11px', color: '#64748B', fontWeight: 600, textTransform: 'uppercase' }}>Orçamento Total</div>
+                <div style={{ fontSize: '15px', fontWeight: 800, color: '#0F172A', marginTop: '2px' }}>
+                  R$ {selectedProject.totalBudget.toLocaleString('pt-BR')}
+                </div>
+              </div>
+
+              <div>
+                <div style={{ fontSize: '11px', color: '#64748B', fontWeight: 600, textTransform: 'uppercase' }}>Progresso Físico Geral</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
+                  <div style={{ flex: 1, height: '8px', background: '#E2E8F0', borderRadius: '9999px', overflow: 'hidden' }}>
+                    <div style={{ width: `${selectedProject.overallProgress}%`, height: '100%', background: '#2563EB', borderRadius: '9999px', transition: 'width 0.3s ease' }}></div>
+                  </div>
+                  <span style={{ fontSize: '13px', fontWeight: 800, color: '#2563EB' }}>
+                    {selectedProject.overallProgress}%
+                  </span>
+                </div>
+              </div>
+
+              <div>
+                <div style={{ fontSize: '11px', color: '#64748B', fontWeight: 600, textTransform: 'uppercase' }}>Registros Técnicos</div>
+                <div style={{ fontSize: '15px', fontWeight: 700, color: '#0F172A', marginTop: '2px' }}>
+                  {selectedProject.milestones?.length || 0} etapas
+                </div>
+              </div>
+            </div>
           </div>
 
+          {/* Add Milestone Form */}
           {addingMilestone && (
-            <form onSubmit={handleAddMilestone} className="card" style={{ padding: '14px', marginBottom: '18px', display: 'flex', flexDirection: 'column', gap: '10px', border: '1px solid var(--steel-line)' }}>
-              <div className="tb-label">Novo Registro no Diário de Obra</div>
-              
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-                <div className="field">
-                  <label style={{ fontSize: '10px', fontFamily: 'var(--font-mono)', color: 'var(--steel)' }}>Fase Construtiva</label>
-                  <select className="input-field" value={mPhase} onChange={e => setMPhase(e.target.value as TimelinePhase)}>
+            <form onSubmit={handleAddMilestone} className="card" style={{ padding: '20px', marginBottom: '20px', display: 'flex', flexDirection: 'column', gap: '14px', border: '1.5px solid #2563EB' }}>
+              <div style={{ fontWeight: 700, fontSize: '14px', color: '#0F172A', borderBottom: '1px solid #E2E8F0', paddingBottom: '8px' }}>
+                Novo Registro no Diário de Obra
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '12px' }}>
+                <div>
+                  <label style={{ fontSize: '11.5px', fontWeight: 600, color: '#475569', display: 'block', marginBottom: '4px' }}>Fase da Construção</label>
+                  <select 
+                    className="input-field" 
+                    value={mPhase} 
+                    onChange={e => setMPhase(e.target.value as TimelinePhase)}
+                  >
                     <option value="Fundação e Terraplanagem">Fundação e Terraplanagem</option>
                     <option value="Estrutura e Concreto">Estrutura e Concreto</option>
                     <option value="Alvenaria e Vedações">Alvenaria e Vedações</option>
@@ -228,95 +282,145 @@ export const ConstructionTimelineView: React.FC<ConstructionTimelineViewProps> =
                   </select>
                 </div>
 
-                <div className="field">
-                  <label style={{ fontSize: '10px', fontFamily: 'var(--font-mono)', color: 'var(--steel)' }}>% de Conclusão da Etapa</label>
-                  <input type="number" className="input-field mono" value={mProgress} onChange={e => setMProgress(e.target.value)} min="0" max="100" />
+                <div>
+                  <label style={{ fontSize: '11.5px', fontWeight: 600, color: '#475569', display: 'block', marginBottom: '4px' }}>Percentual Concluído (%)</label>
+                  <input 
+                    type="number" 
+                    className="input-field" 
+                    min="0" 
+                    max="100" 
+                    value={mProgress} 
+                    onChange={e => setMProgress(e.target.value)} 
+                  />
                 </div>
               </div>
 
-              <div className="field">
-                <label style={{ fontSize: '10px', fontFamily: 'var(--font-mono)', color: 'var(--steel)' }}>Título da Ocorrência *</label>
-                <input type="text" className="input-field" placeholder="Ex: Vistoria de Armadura e Concretagem dos Pilares" value={mTitle} onChange={e => setMTitle(e.target.value)} required />
+              <div>
+                <label style={{ fontSize: '11.5px', fontWeight: 600, color: '#475569', display: 'block', marginBottom: '4px' }}>Título da Atividade / Etapa *</label>
+                <input 
+                  type="text" 
+                  className="input-field" 
+                  placeholder="Ex: Concretagem das Vigas Baldrame e Pilares do Térreo" 
+                  value={mTitle} 
+                  onChange={e => setMTitle(e.target.value)} 
+                  required 
+                />
               </div>
 
-              <div className="field">
-                <label style={{ fontSize: '10px', fontFamily: 'var(--font-mono)', color: 'var(--steel)' }}>Relatório Técnico da Execução *</label>
-                <textarea className="input-field" rows={3} placeholder="Descreva o avanço técnico, ensaios realizados, fck do concreto, etc." value={mDesc} onChange={e => setMDesc(e.target.value)} required />
+              <div>
+                <label style={{ fontSize: '11.5px', fontWeight: 600, color: '#475569', display: 'block', marginBottom: '4px' }}>Descrição Técnica / Relato de Campo *</label>
+                <textarea 
+                  className="input-field" 
+                  rows={3} 
+                  placeholder="Descreva materiais utilizados, condições climáticas, equipe presente e conformidade com projeto estrutural..." 
+                  value={mDesc} 
+                  onChange={e => setMDesc(e.target.value)} 
+                  required 
+                />
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-                <div className="field">
-                  <label style={{ fontSize: '10px', fontFamily: 'var(--font-mono)', color: 'var(--steel)' }}>Custo Incorrido na Etapa (R$)</label>
-                  <input type="number" className="input-field mono" value={mCost} onChange={e => setMCost(e.target.value)} />
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div>
+                  <label style={{ fontSize: '11.5px', fontWeight: 600, color: '#475569', display: 'block', marginBottom: '4px' }}>Custo da Etapa (R$)</label>
+                  <input 
+                    type="number" 
+                    className="input-field" 
+                    value={mCost} 
+                    onChange={e => setMCost(e.target.value)} 
+                  />
                 </div>
-                <div className="field">
-                  <label style={{ fontSize: '10px', fontFamily: 'var(--font-mono)', color: 'var(--steel)' }}>Foto / Evidência (URL)</label>
-                  <input type="url" className="input-field mono" value={mPhoto} onChange={e => setMPhoto(e.target.value)} />
+
+                <div>
+                  <label style={{ fontSize: '11.5px', fontWeight: 600, color: '#475569', display: 'block', marginBottom: '4px' }}>URL Foto da Etapa</label>
+                  <input 
+                    type="text" 
+                    className="input-field" 
+                    value={mPhoto} 
+                    onChange={e => setMPhoto(e.target.value)} 
+                  />
                 </div>
               </div>
 
-              <button type="submit" className="btn accent" style={{ justifyContent: 'center', fontSize: '11px', marginTop: '4px' }}>
-                <CheckCircle2 size={13} /> Registrar no Livro de Obra
-              </button>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '6px' }}>
+                <button type="button" onClick={() => setAddingMilestone(false)} className="btn ghost">
+                  Cancelar
+                </button>
+                <button type="submit" className="btn primary">
+                  Registrar no Diário
+                </button>
+              </div>
             </form>
           )}
 
-          {/* Timeline Milestones */}
+          {/* Milestones Stream */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
             {selectedProject.milestones && selectedProject.milestones.length > 0 ? (
-              selectedProject.milestones.map((m) => (
-                <div key={m.id} className="card">
-                  <div className="card-head">
-                    <div className="avatar">OB</div>
-                    <div className="who">
-                      <div className="name">{m.title}</div>
-                      <div className="role">{m.updatedAt} • {m.responsibleCrea}</div>
+              selectedProject.milestones.map((m, idx) => (
+                <div key={m.id} className="card" style={{ padding: '18px', borderRadius: '14px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+                    <div>
+                      <div style={{ fontSize: '11px', color: '#2563EB', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                        {m.phase}
+                      </div>
+                      <h4 style={{ fontSize: '15px', fontWeight: 700, color: '#0F172A', marginTop: '2px' }}>
+                        {m.title}
+                      </h4>
+                      <div style={{ fontSize: '11px', color: '#64748B', marginTop: '2px' }}>
+                        {m.updatedAt} • RT: {m.responsibleCrea}
+                      </div>
                     </div>
-                    <span className="tag">{m.phase}</span>
+
+                    <span className="badge verified" style={{ fontSize: '11px' }}>
+                      {m.progressPercent}% Concluído
+                    </span>
                   </div>
 
-                  <div className="card-body">
-                    <p style={{ fontSize: '12.5px', color: 'var(--graphite)', lineHeight: 1.5 }}>{m.description}</p>
-                  </div>
+                  <p style={{ fontSize: '13px', color: '#334155', lineHeight: 1.55, margin: '8px 0' }}>
+                    {m.description}
+                  </p>
 
                   {m.photoUrls && m.photoUrls.length > 0 && (
-                    <div style={{ margin: '0 13px 11px', height: '150px', borderRadius: '2px', overflow: 'hidden' }}>
-                      <img src={m.photoUrls[0]} alt="Foto da Etapa" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    <div style={{ maxHeight: '280px', overflow: 'hidden', borderRadius: '10px', marginTop: '10px' }}>
+                      <img 
+                        src={m.photoUrls[0]} 
+                        alt={m.title} 
+                        style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                      />
                     </div>
                   )}
 
-                  <div className="titleblock">
-                    <div className="tb-field">
-                      <div className="tb-label">Custo Etapa</div>
-                      <div className="tb-value">R$ {m.costIncurred.toLocaleString('pt-BR')}</div>
+                  {m.costIncurred > 0 && (
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '10px', fontSize: '12px', fontWeight: 600, color: '#0F172A' }}>
+                      Custo da Etapa: <span style={{ color: '#059669', marginLeft: '4px' }}>R$ {m.costIncurred.toLocaleString('pt-BR')}</span>
                     </div>
-                    <div className="tb-field">
-                      <div className="tb-label">Conclusão</div>
-                      <div className="tb-value" style={{ color: 'var(--accent)', fontWeight: 700 }}>{m.progressPercent}%</div>
-                    </div>
-                  </div>
+                  )}
                 </div>
               ))
             ) : (
-              <div className="card" style={{ padding: '36px', textAlign: 'center', color: 'var(--steel)' }}>
-                <Clock size={32} color="var(--steel)" style={{ margin: '0 auto 8px' }} />
-                <div style={{ fontWeight: 600, fontSize: '13px', color: 'var(--ink)' }}>Nenhum registro lançado nesta obra</div>
-                <div style={{ fontSize: '11px', marginTop: '4px' }}>Clique em "Novo Lançamento" para cadastrar o avanço físico e relatórios fotográficos.</div>
+              <div className="card" style={{ padding: '40px 20px', textAlign: 'center', background: '#FFFFFF', borderRadius: '14px', border: '1px dashed #CBD5E1' }}>
+                <HardHat size={32} color="#94A3B8" style={{ margin: '0 auto 10px' }} />
+                <h4 style={{ fontSize: '15px', fontWeight: 700, color: '#0F172A' }}>Nenhum registro de etapa ainda</h4>
+                <p style={{ fontSize: '12.5px', color: '#64748B', maxWidth: '380px', margin: '4px auto 16px', lineHeight: 1.5 }}>
+                  Comece registrando o estacamento, fundação ou concretagem para acompanhar a evolução física e fotográfica da obra.
+                </p>
+                <button onClick={() => setAddingMilestone(true)} className="btn primary" style={{ margin: '0 auto', fontSize: '12px' }}>
+                  <Plus size={14} /> Fazer Primeiro Registro
+                </button>
               </div>
             )}
           </div>
-        </>
+        </div>
       ) : (
-        <div className="card" style={{ padding: '48px 24px', textAlign: 'center', color: 'var(--steel)', background: 'var(--white)', border: '1px dashed var(--steel-line)' }}>
-          <HardHat size={44} color="var(--accent)" style={{ margin: '0 auto 12px' }} />
-          <h3 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--ink)', marginBottom: '6px' }}>
-            Nenhum Diário de Obra Ativo
+        <div className="card" style={{ padding: '50px 24px', textAlign: 'center', background: '#FFFFFF', borderRadius: '14px', border: '1px dashed #CBD5E1' }}>
+          <Building2 size={36} color="#94A3B8" style={{ margin: '0 auto 12px' }} />
+          <h3 style={{ fontSize: '17px', fontWeight: 700, color: '#0F172A' }}>
+            Nenhum Livro de Diário de Obra Ativo
           </h3>
-          <p style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', color: 'var(--steel)', maxWidth: '400px', margin: '0 auto 18px', lineHeight: 1.4 }}>
-            Crie o acompanhamento digital da sua obra para registrar ocorrências, marcos construtivos, laudos e fotos com validade técnica.
+          <p style={{ fontSize: '13px', color: '#64748B', maxWidth: '420px', margin: '6px auto 20px', lineHeight: 1.5 }}>
+            Inicie o diário da sua construção para manter registros com chancela técnica, ART e upload de fotos da evolução física.
           </p>
-          <button onClick={() => setCreatingProject(true)} className="btn primary" style={{ margin: '0 auto', fontSize: '11px' }}>
-            <Plus size={14} /> Iniciar Novo Diário de Obra
+          <button onClick={() => setCreatingProject(true)} className="btn primary" style={{ margin: '0 auto', fontSize: '12px', padding: '10px 20px' }}>
+            <Plus size={14} /> Iniciar Diário de Obra
           </button>
         </div>
       )}

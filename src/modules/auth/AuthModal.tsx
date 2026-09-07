@@ -107,16 +107,15 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       onLoginSuccess(res.user);
       onClose();
     } else {
-      // Fallback local if backend is initializing
       setErrorMessage(res.error || 'Não foi possível conectar ao servidor.');
     }
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={mode === 'login' ? 'Entrar no ALICERCE' : 'Criar Nova Conta'} maxWidth="500px">
+    <Modal isOpen={isOpen} onClose={onClose} title={mode === 'login' ? 'Entrar no ALICERCE' : 'Criar Nova Conta'} maxWidth="520px">
       
       {/* Mode Switcher Segments */}
-      <div className="segrow" style={{ marginBottom: '14px' }}>
+      <div className="segrow" style={{ marginBottom: '16px' }}>
         <div className={`seg ${mode === 'login' ? 'on' : ''}`} onClick={() => { setMode('login'); setErrorMessage(null); }}>
           Acessar Minha Conta
         </div>
@@ -126,13 +125,25 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       </div>
 
       {errorMessage && (
-        <div style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid #EF4444', color: '#B91C1C', padding: '8px 12px', borderRadius: '4px', fontSize: '11.5px', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 500 }}>
-          <AlertCircle size={14} /> {errorMessage}
+        <div style={{ 
+          background: 'rgba(239, 68, 68, 0.08)', 
+          border: '1px solid rgba(239, 68, 68, 0.25)', 
+          color: '#DC2626', 
+          padding: '10px 14px', 
+          borderRadius: 'var(--radius-md)', 
+          fontSize: '12px', 
+          marginBottom: '16px', 
+          display: 'flex', 
+          alignItems: 'center', 
+          gap: '8px', 
+          fontWeight: 600 
+        }}>
+          <AlertCircle size={16} /> {errorMessage}
         </div>
       )}
 
       {mode === 'login' ? (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           
           <form onSubmit={handleLogin} className="form-wrap" style={{ padding: 0 }}>
             <div className="field">
@@ -157,61 +168,61 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               />
             </div>
 
-            <button type="submit" disabled={loading} className="btn primary" style={{ width: '100%', justifyContent: 'center', marginTop: '6px', fontSize: '11.5px' }}>
-              {loading ? <Loader2 size={14} className="animate-spin" /> : <UserCheck size={14} />} Entrar na Plataforma
+            <button type="submit" disabled={loading} className="btn primary" style={{ width: '100%', justifyContent: 'center', marginTop: '6px', padding: '10px 16px', fontSize: '13px' }}>
+              {loading ? <Loader2 size={15} className="animate-spin" /> : <UserCheck size={15} />} Entrar na Plataforma
             </button>
           </form>
 
           {/* Quick Access Demo Accounts */}
-          <div style={{ borderTop: '1px solid var(--steel-line)', paddingTop: '12px', marginTop: '4px' }}>
-            <div style={{ fontSize: '10.5px', color: 'var(--steel)', textTransform: 'uppercase', fontFamily: 'var(--font-mono)', marginBottom: '8px' }}>
-              ⚡ Acesso Rápido de Demonstração (1 Clique):
+          <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '16px', marginTop: '4px' }}>
+            <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.04em', marginBottom: '10px' }}>
+              ⚡ Acesso de Demonstração Rápido (1 Clique):
             </div>
             
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
               <button 
                 type="button" 
                 onClick={() => handleQuickLogin('roberto.silva@alicerce.com.br', 'alicerce2026')}
                 className="btn ghost" 
-                style={{ fontSize: '10px', padding: '6px 8px', justifyContent: 'flex-start' }}
+                style={{ fontSize: '11.5px', padding: '8px 10px', justifyContent: 'flex-start' }}
               >
-                <HardHat size={12} color="var(--accent)" /> Eng. Roberto Silva
+                <HardHat size={14} color="var(--primary-color)" /> Eng. Roberto Silva
               </button>
 
               <button 
                 type="button" 
                 onClick={() => handleQuickLogin('camila.torres@alicerce.com.br', 'alicerce2026')}
                 className="btn ghost" 
-                style={{ fontSize: '10px', padding: '6px 8px', justifyContent: 'flex-start' }}
+                style={{ fontSize: '11.5px', padding: '8px 10px', justifyContent: 'flex-start' }}
               >
-                <Building2 size={12} color="var(--accent)" /> Arqª. Camila Torres
+                <Building2 size={14} color="var(--accent-color)" /> Arqª. Camila Torres
               </button>
 
               <button 
                 type="button" 
                 onClick={() => handleQuickLogin('contato@vanguard.com.br', 'alicerce2026')}
                 className="btn ghost" 
-                style={{ fontSize: '10px', padding: '6px 8px', justifyContent: 'flex-start' }}
+                style={{ fontSize: '11.5px', padding: '8px 10px', justifyContent: 'flex-start' }}
               >
-                <Building2 size={12} color="var(--line)" /> Vanguard Construtora
+                <Building2 size={14} color="var(--primary-color)" /> Vanguard Construtora
               </button>
 
               <button 
                 type="button" 
                 onClick={() => handleQuickLogin('vendas@polimixalicerce.com.br', 'alicerce2026')}
                 className="btn ghost" 
-                style={{ fontSize: '10px', padding: '6px 8px', justifyContent: 'flex-start' }}
+                style={{ fontSize: '11.5px', padding: '8px 10px', justifyContent: 'flex-start' }}
               >
-                <Truck size={12} color="#059669" /> Polimix Materiais
+                <Truck size={14} color="#10B981" /> Polimix Materiais
               </button>
 
               <button 
                 type="button" 
                 onClick={() => handleQuickLogin('admin@alicerce.com.br', 'alicerce2026')}
                 className="btn ghost" 
-                style={{ gridColumn: 'span 2', fontSize: '10px', padding: '6px 8px', justifyContent: 'center', color: 'var(--ink-soft)' }}
+                style={{ gridColumn: 'span 2', fontSize: '11.5px', padding: '8px 10px', justifyContent: 'center', color: 'var(--text-heading)', fontWeight: 600 }}
               >
-                <ShieldAlert size={12} /> Painel Administrador Geral (Gestor ALICERCE)
+                <ShieldAlert size={14} /> Painel Administrador Geral (Gestor ALICERCE)
               </button>
             </div>
           </div>
@@ -226,7 +237,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 type="button"
                 className={`btn ${selectedRole === 'profissional_crea' ? 'primary' : 'ghost'}`}
                 onClick={() => setSelectedRole('profissional_crea')}
-                style={{ fontSize: '10px', padding: '6px 2px' }}
+                style={{ fontSize: '11px', padding: '8px 4px' }}
               >
                 Engenheiro
               </button>
@@ -234,7 +245,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 type="button"
                 className={`btn ${selectedRole === 'profissional_cau' ? 'primary' : 'ghost'}`}
                 onClick={() => setSelectedRole('profissional_cau')}
-                style={{ fontSize: '10px', padding: '6px 2px' }}
+                style={{ fontSize: '11px', padding: '8px 4px' }}
               >
                 Arquiteto
               </button>
@@ -242,7 +253,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 type="button"
                 className={`btn ${selectedRole === 'empresa_cnpj' ? 'accent' : 'ghost'}`}
                 onClick={() => setSelectedRole('empresa_cnpj')}
-                style={{ fontSize: '10px', padding: '6px 2px' }}
+                style={{ fontSize: '11px', padding: '8px 4px' }}
               >
                 Construtora
               </button>
@@ -250,7 +261,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 type="button"
                 className={`btn ${selectedRole === 'fornecedor' ? 'accent' : 'ghost'}`}
                 onClick={() => setSelectedRole('fornecedor')}
-                style={{ fontSize: '10px', padding: '6px 2px' }}
+                style={{ fontSize: '11px', padding: '8px 4px' }}
               >
                 Fornecedor
               </button>
@@ -258,7 +269,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 type="button"
                 className={`btn ${selectedRole === 'cliente' ? 'primary' : 'ghost'}`}
                 onClick={() => setSelectedRole('cliente')}
-                style={{ gridColumn: 'span 2', fontSize: '10px', padding: '6px 2px' }}
+                style={{ gridColumn: 'span 2', fontSize: '11px', padding: '8px 4px' }}
               >
                 Proprietário / Cliente
               </button>
@@ -287,7 +298,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             />
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
             {selectedRole.includes('crea') || selectedRole.includes('cau') ? (
               <div className="field">
                 <label>Registro CREA / CAU</label>
@@ -333,7 +344,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '8px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '10px' }}>
             <div className="field">
               <label>Cidade</label>
               <input 
@@ -366,8 +377,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             />
           </div>
 
-          <button type="submit" disabled={loading} className="btn primary" style={{ width: '100%', justifyContent: 'center', marginTop: '6px' }}>
-            {loading ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle2 size={14} />} Finalizar Cadastro Seguro
+          <button type="submit" disabled={loading} className="btn primary" style={{ width: '100%', justifyContent: 'center', marginTop: '6px', padding: '10px 16px', fontSize: '13px' }}>
+            {loading ? <Loader2 size={15} className="animate-spin" /> : <CheckCircle2 size={15} />} Finalizar Cadastro Seguro
           </button>
         </form>
       )}

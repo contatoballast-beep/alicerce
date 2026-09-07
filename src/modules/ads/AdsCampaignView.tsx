@@ -68,86 +68,109 @@ export const AdsCampaignView: React.FC<AdsCampaignViewProps> = ({
   };
 
   return (
-    <div style={{ maxWidth: '680px', margin: '0 auto', padding: '20px 16px' }}>
+    <div style={{ maxWidth: '780px', margin: '0 auto', padding: '24px 16px' }}>
       
       {/* Header Banner */}
-      <div className="card" style={{ padding: '16px', marginBottom: '18px', borderLeft: '4px solid var(--line)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div>
-            <div className="tb-label" style={{ color: 'var(--line)', display: 'flex', alignItems: 'center', gap: '4px' }}>
-              <Megaphone size={12} /> ALICERCE ADS — MARKETING DA CONSTRUÇÃO CIVIL
-            </div>
-            <h2 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--ink)' }}>
-              Painel do Anunciante
-            </h2>
-            <div style={{ fontSize: '11px', color: 'var(--steel)', marginTop: '2px' }}>
-              Divulgue serviços, materiais e capte contratos com engenheiros e construtoras verificados.
-            </div>
+      <div style={{ 
+        background: 'var(--bg-card)', 
+        border: '1px solid var(--border-color)', 
+        borderRadius: 'var(--radius-lg)', 
+        padding: '20px 24px', 
+        marginBottom: '20px',
+        boxShadow: 'var(--shadow-sm)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        flexWrap: 'wrap',
+        gap: '16px'
+      }}>
+        <div>
+          <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--accent-color)', display: 'flex', alignItems: 'center', gap: '6px', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px' }}>
+            <Megaphone size={13} /> ALICERCE ADS · GESTOR DE TRÁFEGO TÉCNICO
           </div>
-          <button onClick={() => setCreating(!creating)} className="btn primary" style={{ fontSize: '11px' }}>
-            <Plus size={13} /> {creating ? 'Cancelar' : 'Nova Campanha'}
-          </button>
+          <h2 style={{ fontSize: '20px', fontWeight: 800, color: 'var(--text-heading)', margin: 0, letterSpacing: '-0.02em' }}>
+            Painel do Anunciante
+          </h2>
+          <p style={{ fontSize: '13px', color: 'var(--text-muted)', margin: '4px 0 0 0' }}>
+            Divulgue serviços, materiais e capte contratos com engenheiros e construtoras verificadas.
+          </p>
         </div>
+        <button onClick={() => setCreating(!creating)} className="btn primary" style={{ padding: '10px 18px', fontSize: '13px' }}>
+          <Plus size={15} /> {creating ? 'Fechar Formulário' : 'Nova Campanha'}
+        </button>
       </div>
 
       {/* KPI Performance Dashboard */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px', marginBottom: '18px' }}>
-        <div className="card" style={{ padding: '10px' }}>
-          <div className="tb-label" style={{ fontSize: '9px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-            <Eye size={10} color="var(--steel)" /> Impressões
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '12px', marginBottom: '24px' }}>
+        <div className="card" style={{ padding: '16px' }}>
+          <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '6px', textTransform: 'uppercase' }}>
+            <Eye size={13} color="var(--primary-color)" /> Impressões
           </div>
-          <div style={{ fontSize: '16px', fontWeight: 700, color: 'var(--ink)', marginTop: '2px' }}>
+          <div style={{ fontSize: '22px', fontWeight: 800, color: 'var(--text-heading)', marginTop: '8px', letterSpacing: '-0.02em' }}>
             {totalImpressions.toLocaleString('pt-BR')}
           </div>
-          <div style={{ fontSize: '9px', color: '#059669', marginTop: '2px' }}>Exibições reais</div>
+          <div style={{ fontSize: '11px', color: '#10B981', fontWeight: 600, marginTop: '4px' }}>Exibições qualificadas</div>
         </div>
 
-        <div className="card" style={{ padding: '10px' }}>
-          <div className="tb-label" style={{ fontSize: '9px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-            <MousePointer size={10} color="var(--accent)" /> Cliques
+        <div className="card" style={{ padding: '16px' }}>
+          <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '6px', textTransform: 'uppercase' }}>
+            <MousePointer size={13} color="var(--accent-color)" /> Cliques Únicos
           </div>
-          <div style={{ fontSize: '16px', fontWeight: 700, color: 'var(--accent)', marginTop: '2px' }}>
+          <div style={{ fontSize: '22px', fontWeight: 800, color: 'var(--accent-color)', marginTop: '8px', letterSpacing: '-0.02em' }}>
             {totalClicks}
           </div>
-          <div style={{ fontSize: '9px', color: 'var(--steel)', marginTop: '2px' }}>CTR: {avgCtr}%</div>
+          <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px' }}>CTR médio: {avgCtr}%</div>
         </div>
 
-        <div className="card" style={{ padding: '10px' }}>
-          <div className="tb-label" style={{ fontSize: '9px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-            <DollarSign size={10} color="var(--line)" /> Investimento
+        <div className="card" style={{ padding: '16px' }}>
+          <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '6px', textTransform: 'uppercase' }}>
+            <DollarSign size={13} color="var(--primary-color)" /> Investimento
           </div>
-          <div style={{ fontSize: '15px', fontWeight: 700, color: 'var(--line)', marginTop: '2px' }}>
+          <div style={{ fontSize: '20px', fontWeight: 800, color: 'var(--primary-color)', marginTop: '8px', fontFamily: 'var(--font-mono)' }}>
             R$ {totalBudget.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
           </div>
-          <div style={{ fontSize: '9px', color: 'var(--steel)', marginTop: '2px' }}>Total alocado</div>
+          <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px' }}>Total alocado</div>
         </div>
 
-        <div className="card" style={{ padding: '10px' }}>
-          <div className="tb-label" style={{ fontSize: '9px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-            <Target size={10} color="#059669" /> Campanhas
+        <div className="card" style={{ padding: '16px' }}>
+          <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '6px', textTransform: 'uppercase' }}>
+            <Target size={13} color="#10B981" /> Veiculações
           </div>
-          <div style={{ fontSize: '16px', fontWeight: 700, color: '#059669', marginTop: '2px' }}>
-            {activeCount} <span style={{ fontSize: '11px', color: 'var(--steel)', fontWeight: 400 }}>/ {localCampaigns.length}</span>
+          <div style={{ fontSize: '22px', fontWeight: 800, color: '#10B981', marginTop: '8px' }}>
+            {activeCount} <span style={{ fontSize: '13px', color: 'var(--text-muted)', fontWeight: 500 }}>/ {localCampaigns.length}</span>
           </div>
-          <div style={{ fontSize: '9px', color: '#059669', marginTop: '2px' }}>Veiculando no feed</div>
+          <div style={{ fontSize: '11px', color: '#10B981', fontWeight: 600, marginTop: '4px' }}>Campanhas ativas</div>
         </div>
       </div>
 
       {/* Creation Modal / Form */}
       {creating && (
-        <form onSubmit={handleCreate} className="card" style={{ padding: '16px', marginBottom: '18px', display: 'flex', flexDirection: 'column', gap: '12px', border: '2px solid var(--accent)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--steel-line)', paddingBottom: '8px' }}>
-            <div style={{ fontWeight: 700, fontSize: '13px', color: 'var(--ink)' }}>
-              Criar Nova Campanha Patrocinada
+        <form onSubmit={handleCreate} className="card" style={{ padding: '24px', marginBottom: '24px', display: 'flex', flexDirection: 'column', gap: '16px', border: '2px solid var(--accent-color)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--border-color)', paddingBottom: '12px' }}>
+            <div>
+              <div style={{ fontWeight: 800, fontSize: '16px', color: 'var(--text-heading)' }}>
+                Criar Nova Campanha Patrocinada
+              </div>
+              <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '2px' }}>
+                Seu anúncio será inserido organicamente no Feed de Obras e no Catálogo Profissional.
+              </div>
             </div>
-            <span className="tag warn" style={{ fontSize: '9.5px' }}>PIX AUTOMÁTICO</span>
+            <span style={{ 
+              fontSize: '11px', 
+              fontWeight: 700, 
+              padding: '4px 10px', 
+              borderRadius: 'var(--radius-full)', 
+              background: 'rgba(234, 88, 12, 0.1)', 
+              color: 'var(--accent-color)' 
+            }}>
+              PIX AUTOMÁTICO
+            </span>
           </div>
 
           <div className="field">
-            <label style={{ fontSize: '10px', fontFamily: 'var(--font-mono)', color: 'var(--steel)', textTransform: 'uppercase' }}>Título / Chamada do Anúncio *</label>
+            <label>Título / Chamada Comercial do Anúncio *</label>
             <input 
               type="text" 
-              className="input-field" 
               placeholder="Ex: Fornecimento de Concreto Usinado fck 30 MPa com Bombeamento em SP" 
               value={title} 
               onChange={e => setTitle(e.target.value)} 
@@ -155,10 +178,10 @@ export const AdsCampaignView: React.FC<AdsCampaignViewProps> = ({
             />
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '14px' }}>
             <div className="field">
-              <label style={{ fontSize: '10px', fontFamily: 'var(--font-mono)', color: 'var(--steel)', textTransform: 'uppercase' }}>Objetivo Principal</label>
-              <select className="input-field" value={objective} onChange={e => setObjective(e.target.value)}>
+              <label>Objetivo Principal</label>
+              <select value={objective} onChange={e => setObjective(e.target.value)}>
                 <option value="Captação de Leads e Obras">Captação de Contratos & Obras</option>
                 <option value="Venda Direta de Materiais">Venda Direta de Materiais/Insumos</option>
                 <option value="Divulgação de Escritório/Construtora">Divulgação Institucional de Marca</option>
@@ -166,10 +189,9 @@ export const AdsCampaignView: React.FC<AdsCampaignViewProps> = ({
             </div>
 
             <div className="field">
-              <label style={{ fontSize: '10px', fontFamily: 'var(--font-mono)', color: 'var(--steel)', textTransform: 'uppercase' }}>Região Alvo</label>
+              <label>Região Geográfica Alvo</label>
               <input 
                 type="text" 
-                className="input-field" 
                 value={targetRegion} 
                 onChange={e => setTargetRegion(e.target.value)} 
                 placeholder="Ex: São Paulo e Campinas - SP"
@@ -177,44 +199,59 @@ export const AdsCampaignView: React.FC<AdsCampaignViewProps> = ({
             </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '14px' }}>
             <div className="field">
-              <label style={{ fontSize: '10px', fontFamily: 'var(--font-mono)', color: 'var(--steel)', textTransform: 'uppercase' }}>Orçamento Diário (R$)</label>
+              <label>Orçamento Diário (R$)</label>
               <input 
                 type="number" 
-                className="input-field mono" 
+                className="mono" 
                 value={dailyBudget} 
                 onChange={e => setDailyBudget(e.target.value)} 
                 min="10"
               />
             </div>
             <div className="field">
-              <label style={{ fontSize: '10px', fontFamily: 'var(--font-mono)', color: 'var(--steel)', textTransform: 'uppercase' }}>Duração (Dias)</label>
+              <label>Duração (Dias)</label>
               <input 
                 type="number" 
-                className="input-field mono" 
+                className="mono" 
                 value={durationDays} 
                 onChange={e => setDurationDays(e.target.value)} 
                 min="1"
               />
             </div>
             <div className="field">
-              <label style={{ fontSize: '10px', fontFamily: 'var(--font-mono)', color: 'var(--steel)', textTransform: 'uppercase' }}>Total Estimado</label>
-              <div style={{ height: '36px', display: 'flex', alignItems: 'center', fontWeight: 700, fontSize: '13px', color: 'var(--line)' }}>
+              <label>Investimento Total</label>
+              <div style={{ 
+                height: '42px', 
+                display: 'flex', 
+                alignItems: 'center', 
+                fontWeight: 800, 
+                fontSize: '15px', 
+                color: 'var(--primary-color)',
+                fontFamily: 'var(--font-mono)'
+              }}>
                 R$ {((parseFloat(dailyBudget) || 50) * (parseInt(durationDays, 10) || 14)).toFixed(2)}
               </div>
             </div>
           </div>
 
-          <div style={{ background: 'var(--paper)', padding: '8px 12px', borderRadius: '3px', fontSize: '11px', color: 'var(--steel)' }}>
+          <div style={{ 
+            background: 'var(--primary-bg)', 
+            padding: '12px 16px', 
+            borderRadius: 'var(--radius-md)', 
+            fontSize: '12px', 
+            color: 'var(--text-body)',
+            border: '1px solid rgba(37, 99, 235, 0.15)'
+          }}>
             📊 <strong>Alcance Estimado:</strong> ~{((parseFloat(dailyBudget) || 50) * 120).toLocaleString('pt-BR')} impressões qualificadas para engenheiros e decisores na região selecionada.
           </div>
 
-          <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', marginTop: '4px' }}>
-            <button type="button" onClick={() => setCreating(false)} className="btn ghost" style={{ fontSize: '11px' }}>
+          <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '6px' }}>
+            <button type="button" onClick={() => setCreating(false)} className="btn ghost" style={{ fontSize: '12px' }}>
               Cancelar
             </button>
-            <button type="submit" className="btn primary" style={{ fontSize: '11px' }}>
+            <button type="submit" className="btn primary" style={{ fontSize: '12px' }}>
               Criar Campanha e Gerar QR Code Pix
             </button>
           </div>
@@ -223,9 +260,9 @@ export const AdsCampaignView: React.FC<AdsCampaignViewProps> = ({
 
       {/* Campaigns List */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '11px', color: 'var(--steel)', fontFamily: 'var(--font-mono)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '12px', color: 'var(--text-muted)', fontWeight: 600 }}>
           <span>SUAS CAMPANHAS ({localCampaigns.length})</span>
-          <span>DISTRIBUIÇÃO: FEED & CATÁLOGO</span>
+          <span>DISTRIBUIÇÃO ATIVA NO FEED</span>
         </div>
 
         {localCampaigns.map(camp => {
@@ -233,54 +270,89 @@ export const AdsCampaignView: React.FC<AdsCampaignViewProps> = ({
           const isAtiva = camp.status === 'ativa';
 
           return (
-            <div key={camp.id} className="card">
-              <div className="card-head" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <div className="avatar" style={{ background: isAtiva ? 'var(--line)' : 'var(--steel)', color: '#FFF' }}>
+            <div key={camp.id} className="card" style={{ padding: '18px 20px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px', marginBottom: '14px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <div style={{ 
+                    width: '38px', 
+                    height: '38px', 
+                    borderRadius: 'var(--radius-md)', 
+                    background: isAtiva ? 'var(--primary-color)' : 'var(--text-muted)', 
+                    color: '#FFF',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontWeight: 800,
+                    fontSize: '13px'
+                  }}>
                     AD
                   </div>
                   <div>
-                    <div style={{ fontWeight: 700, fontSize: '13px', color: 'var(--ink)' }}>{camp.title}</div>
-                    <div className="mono" style={{ fontSize: '10px', color: 'var(--steel)' }}>
+                    <div style={{ fontWeight: 800, fontSize: '15px', color: 'var(--text-heading)' }}>{camp.title}</div>
+                    <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '2px' }}>
                       {camp.targetRegion} • {camp.objective}
                     </div>
                   </div>
                 </div>
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <span className={`tag ${isAtiva ? '' : 'warn'}`} style={{ fontWeight: 600 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ 
+                    fontSize: '11px', 
+                    fontWeight: 700, 
+                    padding: '3px 8px', 
+                    borderRadius: 'var(--radius-full)',
+                    background: isAtiva ? 'rgba(16, 185, 129, 0.12)' : 'rgba(100, 116, 139, 0.12)',
+                    color: isAtiva ? '#059669' : 'var(--text-muted)'
+                  }}>
                     {camp.status.toUpperCase()}
                   </span>
                   <button 
                     onClick={() => handleToggleStatus(camp)} 
                     className="btn ghost" 
-                    style={{ padding: '4px 8px', fontSize: '10px' }}
+                    style={{ padding: '6px 12px', fontSize: '11.5px' }}
                     title={isAtiva ? 'Pausar Veiculação' : 'Ativar Veiculação'}
                   >
-                    {isAtiva ? <Pause size={12} color="#D97706" /> : <Play size={12} color="#059669" />}
+                    {isAtiva ? <Pause size={13} color="#D97706" /> : <Play size={13} color="#059669" />}
                     {isAtiva ? 'Pausar' : 'Ativar'}
                   </button>
                 </div>
               </div>
 
-              <div className="titleblock" style={{ gridTemplateColumns: 'repeat(4, 1fr)' }}>
-                <div className="tb-field">
-                  <div className="tb-label">Impressões</div>
-                  <div className="tb-value">{camp.impressionsCount.toLocaleString('pt-BR')}</div>
-                </div>
-                <div className="tb-field">
-                  <div className="tb-label">Cliques (CTR)</div>
-                  <div className="tb-value" style={{ color: 'var(--accent)' }}>
-                    {camp.clicksCount} <span style={{ fontSize: '9.5px', color: 'var(--steel)' }}>({ctr}%)</span>
+              {/* Metrics Grid */}
+              <div style={{ 
+                display: 'grid', 
+                gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', 
+                gap: '10px',
+                background: 'var(--bg-subtle)',
+                padding: '12px 16px',
+                borderRadius: 'var(--radius-md)',
+                border: '1px solid var(--border-color)',
+                alignItems: 'center'
+              }}>
+                <div>
+                  <div style={{ fontSize: '10px', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>Impressões</div>
+                  <div style={{ fontSize: '14px', fontWeight: 800, color: 'var(--text-heading)', fontFamily: 'var(--font-mono)' }}>
+                    {camp.impressionsCount.toLocaleString('pt-BR')}
                   </div>
                 </div>
-                <div className="tb-field">
-                  <div className="tb-label">Investimento Total</div>
-                  <div className="tb-value" style={{ color: 'var(--line)' }}>R$ {camp.totalBudget.toFixed(2)}</div>
+
+                <div>
+                  <div style={{ fontSize: '10px', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>Cliques (CTR)</div>
+                  <div style={{ fontSize: '14px', fontWeight: 800, color: 'var(--accent-color)', fontFamily: 'var(--font-mono)' }}>
+                    {camp.clicksCount} <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 500 }}>({ctr}%)</span>
+                  </div>
                 </div>
-                <div className="tb-field" style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
-                  <button onClick={() => onOpenCheckout(camp)} className="btn ghost" style={{ padding: '4px 8px', fontSize: '9.5px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    <QrCode size={11} /> Pix / NFS-e
+
+                <div>
+                  <div style={{ fontSize: '10px', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>Investimento</div>
+                  <div style={{ fontSize: '14px', fontWeight: 800, color: 'var(--primary-color)', fontFamily: 'var(--font-mono)' }}>
+                    R$ {camp.totalBudget.toFixed(2)}
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                  <button onClick={() => onOpenCheckout(camp)} className="btn ghost" style={{ padding: '6px 12px', fontSize: '11.5px', gap: '6px' }}>
+                    <QrCode size={13} /> Pix / NFS-e
                   </button>
                 </div>
               </div>
@@ -289,10 +361,10 @@ export const AdsCampaignView: React.FC<AdsCampaignViewProps> = ({
         })}
 
         {localCampaigns.length === 0 && (
-          <div className="card" style={{ padding: '36px', textAlign: 'center', color: 'var(--steel)' }}>
-            <Megaphone size={32} color="var(--steel)" style={{ margin: '0 auto 8px' }} />
-            <div style={{ fontWeight: 600, fontSize: '13px', color: 'var(--ink)' }}>Nenhuma campanha cadastrada</div>
-            <div style={{ fontSize: '11px', marginTop: '4px' }}>Clique em "Nova Campanha" para começar a anunciar no ecossistema ALICERCE.</div>
+          <div className="card" style={{ padding: '48px 24px', textAlign: 'center', color: 'var(--text-muted)' }}>
+            <Megaphone size={32} color="var(--text-muted)" style={{ margin: '0 auto 12px' }} />
+            <div style={{ fontWeight: 700, fontSize: '15px', color: 'var(--text-heading)' }}>Nenhuma campanha cadastrada</div>
+            <div style={{ fontSize: '13px', marginTop: '4px' }}>Clique em "Nova Campanha" para começar a anunciar no ecossistema ALICERCE.</div>
           </div>
         )}
       </div>

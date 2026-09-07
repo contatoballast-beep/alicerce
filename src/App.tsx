@@ -335,8 +335,24 @@ export const App: React.FC = () => {
       
       {/* Toast Notification Banner */}
       {toastMessage && (
-        <div style={{ position: 'fixed', bottom: '24px', right: '24px', zIndex: 999, background: 'var(--bg-card)', border: '2px solid var(--color-primary)', color: '#FFF', padding: '12px 20px', borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-glow-blue)', fontFamily: 'var(--font-heading)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <span className="pulse-dot"></span>
+        <div style={{ 
+          position: 'fixed', 
+          bottom: '24px', 
+          right: '24px', 
+          zIndex: 999, 
+          background: 'var(--text-heading)', 
+          color: '#FFFFFF', 
+          padding: '12px 20px', 
+          borderRadius: 'var(--radius-md)', 
+          boxShadow: 'var(--shadow-lg)', 
+          fontSize: '13px',
+          fontWeight: 600, 
+          display: 'flex', 
+          alignItems: 'center', 
+          gap: '10px',
+          animation: 'fadeIn 0.2s ease-out'
+        }}>
+          <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#10B981', boxShadow: '0 0 6px #10B981' }}></span>
           {toastMessage}
         </div>
       )}
@@ -357,12 +373,21 @@ export const App: React.FC = () => {
       />
 
       {/* Server Connectivity Banner */}
-      <div style={{ background: 'var(--paper)', borderBottom: '1px solid var(--steel-line)', padding: '4px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '11px', color: 'var(--steel)' }}>
+      <div style={{ 
+        background: 'var(--bg-card)', 
+        borderBottom: '1px solid var(--border-color)', 
+        padding: '6px 20px', 
+        display: 'flex', 
+        justifyContent: 'space-between', 
+        alignItems: 'center', 
+        fontSize: '11.5px', 
+        color: 'var(--text-muted)' 
+      }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', background: serverOnline ? '#10B981' : '#F59E0B' }}></span>
-          <span>{serverOnline ? 'Backend API REST & Turso DB: 100% Conectados e Operacionais' : 'Modo Híbrido: Conexão Local Ativa'}</span>
+          <span style={{ display: 'inline-block', width: '7px', height: '7px', borderRadius: '50%', background: serverOnline ? '#10B981' : '#F59E0B' }}></span>
+          <span>{serverOnline ? 'Backend API REST & SQLite Cloud DB: Conectados e Operacionais' : 'Modo Híbrido: Conexão Local Ativa'}</span>
         </div>
-        <div className="mono" style={{ fontSize: '10px' }}>
+        <div style={{ fontSize: '11px', fontFamily: 'var(--font-mono)' }}>
           Realtime WebSocket: {serverOnline ? 'Online (WSS)' : 'Pronto'}
         </div>
       </div>

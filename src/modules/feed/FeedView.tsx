@@ -2,7 +2,20 @@ import React, { useState, useMemo } from 'react';
 import { Post, UserProfile, AdCampaign } from '../../types';
 import { PostCard } from './PostCard';
 import { rankFeedPosts, FeedRankingMode } from '../../services/feedAlgorithm';
-import { PlusCircle, Search, HardHat, Building2, Sparkles, Cpu, Clock, Flame, MapPin, Zap, SlidersHorizontal } from 'lucide-react';
+import { 
+  Plus, 
+  Search, 
+  HardHat, 
+  Sparkles, 
+  Cpu, 
+  Clock, 
+  Flame, 
+  MapPin, 
+  Zap, 
+  Info,
+  Layers,
+  ChevronRight
+} from 'lucide-react';
 
 interface FeedViewProps {
   posts: Post[];
@@ -45,132 +58,231 @@ export const FeedView: React.FC<FeedViewProps> = ({
     return matchesCategory && matchesSearch;
   });
 
+  const categories = [
+    { id: 'todos', label: 'Tudo' },
+    { id: 'obra_andamento', label: 'Obras & Execução' },
+    { id: 'oportunidade', label: 'Demandas & Oportunidades' },
+    { id: 'artigo_tecnico', label: 'Artigos & Cálculos' },
+    { id: 'patrocinado', label: 'Patrocinados' },
+  ];
+
   return (
-    <div style={{ maxWidth: '640px', margin: '0 auto', padding: '20px 16px' }}>
+    <div style={{ maxWidth: '680px', margin: '0 auto', padding: '24px 16px' }}>
       
-      {/* Header Info & Publish Button */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
-        <div>
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: '10.5px', color: 'var(--line)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-            FEED DE OBRAS & PROJETOS
-          </div>
-          <h2 style={{ fontSize: '20px', fontWeight: 700, color: 'var(--ink)' }}>
-            ALICERCE
-          </h2>
+      {/* Top Banner: Create Post Trigger */}
+      <div className="card" style={{
+        padding: '16px',
+        marginBottom: '20px',
+        background: '#FFFFFF',
+        borderRadius: '14px',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '12px',
+        boxShadow: '0 1px 3px rgba(15, 23, 42, 0.05)'
+      }}>
+        <img 
+          src={currentUser.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150'} 
+          alt={currentUser.name} 
+          style={{ width: '40px', height: '40px', borderRadius: '50%', objectFit: 'cover' }} 
+        />
+        
+        <div 
+          onClick={onOpenCreatePost}
+          style={{
+            flex: 1,
+            background: '#F1F5F9',
+            borderRadius: '9999px',
+            padding: '10px 16px',
+            fontSize: '13px',
+            color: '#64748B',
+            cursor: 'pointer',
+            transition: 'background 0.15s ease'
+          }}
+        >
+          Compartilhe o progresso de uma obra ou cálculo com ART/RRT...
         </div>
 
-        <div style={{ display: 'flex', gap: '8px' }}>
-          <button 
-            onClick={() => setShowAlgorithmDetails(!showAlgorithmDetails)} 
-            className="btn ghost" 
-            style={{ fontSize: '11px', padding: '6px 10px' }}
-            title="Entenda o Algoritmo"
-          >
-            <Zap size={13} color="var(--accent)" /> Algoritmo
-          </button>
-          <button onClick={onOpenCreatePost} className="btn primary" style={{ fontSize: '11px' }}>
-            <PlusCircle size={14} /> Publicar Obra
-          </button>
+        <button 
+          onClick={onOpenCreatePost} 
+          className="btn primary" 
+          style={{ padding: '9px 16px', fontSize: '12px', gap: '6px' }}
+        >
+          <Plus size={14} /> Publicar
+        </button>
+      </div>
+
+      {/* View Header & Algorithm Toggle */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
+        <div>
+          <h2 style={{ fontSize: '18px', fontWeight: 800, color: '#0F172A', letterSpacing: '-0.02em' }}>
+            Feed Técnico da Construção
+          </h2>
+          <div style={{ fontSize: '11.5px', color: '#64748B' }}>
+            Obras verificadas, relatórios de campo e oportunidades reais
+          </div>
         </div>
+
+        <button 
+          onClick={() => setShowAlgorithmDetails(!showAlgorithmDetails)} 
+          className="btn ghost" 
+          style={{ fontSize: '11px', padding: '6px 10px', gap: '5px' }}
+          title="Ver critérios do algoritmo"
+        >
+          <Zap size={12} color="#2563EB" />
+          <span>Algoritmo</span>
+        </button>
       </div>
 
       {/* Algorithm Transparency Card */}
       {showAlgorithmDetails && (
-        <div className="card" style={{ padding: '14px', marginBottom: '16px', background: 'var(--paper)', borderLeft: '4px solid var(--accent)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 700, fontSize: '12px', color: 'var(--ink)', marginBottom: '4px' }}>
-            <Cpu size={14} color="var(--accent)" /> Algoritmo de Relevância Técnica ALICERCE
+        <div className="card" style={{
+          padding: '16px',
+          marginBottom: '16px',
+          background: '#F8FAFC',
+          borderLeft: '4px solid #2563EB',
+          borderRadius: '12px'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 700, fontSize: '12.5px', color: '#0F172A', marginBottom: '4px' }}>
+            <Cpu size={14} color="#2563EB" /> Algoritmo de Relevância Técnica ALICERCE
           </div>
-          <p style={{ fontSize: '11.5px', color: 'var(--graphite)', lineHeight: 1.4, margin: '0 0 8px 0' }}>
-            O feed prioriza publicações com <strong>ART/RRT registrada</strong> (+35 pts), profissionais verificados pelo <strong>CREA/CAU</strong> (+25 pts), obras próximas da sua praça de atuação (<strong>{currentUser.city || 'São Paulo'}/{currentUser.state || 'SP'}</strong>) e discussões técnicas com alto engajamento.
+          <p style={{ fontSize: '12px', color: '#475569', lineHeight: 1.5, marginBottom: '10px' }}>
+            O feed classifica publicações calculando a pontuação por: <strong>ART/RRT registrada</strong> (+50 pts), <strong>chancela profissional</strong> (+25 pts), <strong>proximidade geográfica</strong> ({currentUser.city || 'São Paulo'}/{currentUser.state || 'SP'}) e engajamento técnico de propostas.
           </p>
-          <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', fontSize: '10px', fontFamily: 'var(--font-mono)', color: 'var(--steel)' }}>
-            <span className="tag">ART/RRT Verificada</span>
-            <span className="tag">Proximidade Geográfica</span>
-            <span className="tag">Afinidade com {currentUser.role}</span>
+          <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+            <span className="badge verified">✓ ART/RRT Verificada</span>
+            <span className="badge">📍 Proximidade Regional</span>
+            <span className="badge">⭐ Relevância Profissional</span>
           </div>
         </div>
       )}
 
-      {/* Algorithm Sorting Tabs */}
-      <div className="segrow" style={{ marginBottom: '12px' }}>
-        <div 
-          className={`seg ${rankingMode === 'relevance' ? 'on' : ''}`}
+      {/* Ranking Mode Tabs (Pill style) */}
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(4, 1fr)',
+        gap: '6px',
+        background: '#E2E8F0',
+        padding: '3px',
+        borderRadius: '10px',
+        marginBottom: '14px'
+      }}>
+        <button
           onClick={() => setRankingMode('relevance')}
-          style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '5px',
+            padding: '7px 4px',
+            border: 'none',
+            borderRadius: '7px',
+            fontSize: '11.5px',
+            fontWeight: rankingMode === 'relevance' ? 700 : 500,
+            cursor: 'pointer',
+            background: rankingMode === 'relevance' ? '#FFFFFF' : 'transparent',
+            color: rankingMode === 'relevance' ? '#0F172A' : '#64748B',
+            boxShadow: rankingMode === 'relevance' ? '0 1px 2px rgba(15,23,42,0.06)' : 'none',
+            transition: 'all 0.15s ease'
+          }}
         >
-          <Zap size={11} /> Relevância
-        </div>
-        <div 
-          className={`seg ${rankingMode === 'recent' ? 'on' : ''}`}
+          <Zap size={12} color={rankingMode === 'relevance' ? '#2563EB' : '#94A3B8'} /> Relevância
+        </button>
+
+        <button
           onClick={() => setRankingMode('recent')}
-          style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '5px',
+            padding: '7px 4px',
+            border: 'none',
+            borderRadius: '7px',
+            fontSize: '11.5px',
+            fontWeight: rankingMode === 'recent' ? 700 : 500,
+            cursor: 'pointer',
+            background: rankingMode === 'recent' ? '#FFFFFF' : 'transparent',
+            color: rankingMode === 'recent' ? '#0F172A' : '#64748B',
+            boxShadow: rankingMode === 'recent' ? '0 1px 2px rgba(15,23,42,0.06)' : 'none',
+            transition: 'all 0.15s ease'
+          }}
         >
-          <Clock size={11} /> Recentes
-        </div>
-        <div 
-          className={`seg ${rankingMode === 'engagement' ? 'on' : ''}`}
+          <Clock size={12} color={rankingMode === 'recent' ? '#2563EB' : '#94A3B8'} /> Recentes
+        </button>
+
+        <button
           onClick={() => setRankingMode('engagement')}
-          style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '5px',
+            padding: '7px 4px',
+            border: 'none',
+            borderRadius: '7px',
+            fontSize: '11.5px',
+            fontWeight: rankingMode === 'engagement' ? 700 : 500,
+            cursor: 'pointer',
+            background: rankingMode === 'engagement' ? '#FFFFFF' : 'transparent',
+            color: rankingMode === 'engagement' ? '#0F172A' : '#64748B',
+            boxShadow: rankingMode === 'engagement' ? '0 1px 2px rgba(15,23,42,0.06)' : 'none',
+            transition: 'all 0.15s ease'
+          }}
         >
-          <Flame size={11} /> Em Alta
-        </div>
-        <div 
-          className={`seg ${rankingMode === 'nearby' ? 'on' : ''}`}
+          <Flame size={12} color={rankingMode === 'engagement' ? '#EA580C' : '#94A3B8'} /> Em Alta
+        </button>
+
+        <button
           onClick={() => setRankingMode('nearby')}
-          style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '5px',
+            padding: '7px 4px',
+            border: 'none',
+            borderRadius: '7px',
+            fontSize: '11.5px',
+            fontWeight: rankingMode === 'nearby' ? 700 : 500,
+            cursor: 'pointer',
+            background: rankingMode === 'nearby' ? '#FFFFFF' : 'transparent',
+            color: rankingMode === 'nearby' ? '#0F172A' : '#64748B',
+            boxShadow: rankingMode === 'nearby' ? '0 1px 2px rgba(15,23,42,0.06)' : 'none',
+            transition: 'all 0.15s ease'
+          }}
         >
-          <MapPin size={11} /> Minha Região
-        </div>
+          <MapPin size={12} color={rankingMode === 'nearby' ? '#059669' : '#94A3B8'} /> Região
+        </button>
       </div>
 
       {/* Search Input */}
       <div style={{ position: 'relative', marginBottom: '14px' }}>
-        <Search size={14} color="var(--steel)" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
+        <Search size={14} color="#94A3B8" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
         <input 
           type="text" 
           className="input-field" 
-          placeholder="Buscar por laje, obra, cálculo, cidade ou engenheiro..." 
-          style={{ paddingLeft: '34px' }}
+          placeholder="Buscar por laje, estrutura, cálculo, cidade ou engenheiro..." 
+          style={{ paddingLeft: '34px', fontSize: '12.5px' }}
           value={searchQuery}
           onChange={e => setSearchQuery(e.target.value)}
         />
       </div>
 
-      {/* Chiprow Filter */}
-      <div className="chiprow" style={{ marginBottom: '18px' }}>
-        <div 
-          className={`chip ${selectedCategory === 'todos' ? 'on' : ''}`}
-          onClick={() => setSelectedCategory('todos')}
-        >
-          Tudo ({rankedAndInjectedPosts.length})
-        </div>
-        <div 
-          className={`chip ${selectedCategory === 'obra_andamento' ? 'on' : ''}`}
-          onClick={() => setSelectedCategory('obra_andamento')}
-        >
-          Obras & Estruturas
-        </div>
-        <div 
-          className={`chip ${selectedCategory === 'oportunidade' ? 'on' : ''}`}
-          onClick={() => setSelectedCategory('oportunidade')}
-        >
-          Oportunidades
-        </div>
-        <div 
-          className={`chip ${selectedCategory === 'artigo_tecnico' ? 'on' : ''}`}
-          onClick={() => setSelectedCategory('artigo_tecnico')}
-        >
-          Artigos & Cálculos
-        </div>
-        <div 
-          className={`chip ${selectedCategory === 'patrocinado' ? 'on' : ''}`}
-          onClick={() => setSelectedCategory('patrocinado')}
-        >
-          Patrocinados
-        </div>
+      {/* Category Filter Chips */}
+      <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '4px', marginBottom: '16px' }}>
+        {categories.map(cat => (
+          <button
+            key={cat.id}
+            onClick={() => setSelectedCategory(cat.id)}
+            className={`chip ${selectedCategory === cat.id ? 'on' : ''}`}
+            style={{ fontSize: '11.5px' }}
+          >
+            {cat.label}
+          </button>
+        ))}
       </div>
 
-      {/* Feed Posts */}
+      {/* Feed Posts Stream */}
       <div>
         {filteredPosts.length > 0 ? (
           filteredPosts.map(post => (
@@ -184,16 +296,41 @@ export const FeedView: React.FC<FeedViewProps> = ({
             />
           ))
         ) : (
-          <div className="card" style={{ padding: '48px 24px', textAlign: 'center', color: 'var(--steel)', background: 'var(--white)', border: '1px dashed var(--steel-line)' }}>
-            <HardHat size={40} color="var(--accent)" style={{ margin: '0 auto 12px' }} />
-            <h3 style={{ fontSize: '15px', fontWeight: 700, color: 'var(--ink)', marginBottom: '6px' }}>
+          <div className="card" style={{
+            padding: '48px 24px',
+            textAlign: 'center',
+            background: '#FFFFFF',
+            borderRadius: '14px',
+            border: '1px dashed #CBD5E1'
+          }}>
+            <div style={{
+              width: '56px',
+              height: '56px',
+              borderRadius: '50%',
+              background: '#EFF6FF',
+              color: '#2563EB',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              margin: '0 auto 14px'
+            }}>
+              <HardHat size={28} />
+            </div>
+
+            <h3 style={{ fontSize: '16px', fontWeight: 700, color: '#0F172A', marginBottom: '6px' }}>
               Nenhuma publicação encontrada
             </h3>
-            <p style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', color: 'var(--steel)', maxWidth: '380px', margin: '0 auto 16px', lineHeight: 1.4 }}>
-              O feed está pronto para receber suas obras, laudos com ART/RRT e oportunidades reais da construção civil.
+
+            <p style={{ fontSize: '12.5px', color: '#64748B', maxWidth: '380px', margin: '0 auto 18px', lineHeight: 1.5 }}>
+              O feed técnico está limpo e pronto para receber suas obras, laudos com ART/RRT e oportunidades reais da construção civil.
             </p>
-            <button onClick={onOpenCreatePost} className="btn primary" style={{ margin: '0 auto', fontSize: '11px' }}>
-              <PlusCircle size={14} /> Publicar Primeira Obra no Feed
+
+            <button 
+              onClick={onOpenCreatePost} 
+              className="btn primary" 
+              style={{ margin: '0 auto', fontSize: '12px', padding: '10px 20px', gap: '8px' }}
+            >
+              <Plus size={14} /> Publicar Primeira Obra no Feed
             </button>
           </div>
         )}

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Modal } from '../../components/Modal';
 import { UserProfile, PostCategory } from '../../types';
-import { CheckCircle2 } from 'lucide-react';
+import { CheckCircle2, Image as ImageIcon, MapPin, DollarSign, Calendar } from 'lucide-react';
 
 interface CreatePostModalProps {
   isOpen: boolean;
@@ -56,55 +56,67 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Publicar Obra / Projeto" maxWidth="520px">
+    <Modal isOpen={isOpen} onClose={onClose} title="Publicar Obra ou Projeto Técnico" maxWidth="560px">
       <form onSubmit={handleSubmit} className="form-wrap" style={{ padding: 0 }}>
         
-        <div className="segrow">
-          <div className={`seg ${category === 'obra_andamento' ? 'on' : ''}`} onClick={() => setCategory('obra_andamento')}>Obra</div>
-          <div className={`seg ${category === 'oportunidade' ? 'on' : ''}`} onClick={() => setCategory('oportunidade')}>Oportunidade</div>
-          <div className={`seg ${category === 'artigo_tecnico' ? 'on' : ''}`} onClick={() => setCategory('artigo_tecnico')}>Artigo</div>
+        <div className="segrow" style={{ marginBottom: '14px' }}>
+          <div className={`seg ${category === 'obra_andamento' ? 'on' : ''}`} onClick={() => setCategory('obra_andamento')}>Obra em Andamento</div>
+          <div className={`seg ${category === 'oportunidade' ? 'on' : ''}`} onClick={() => setCategory('oportunidade')}>Oportunidade / Demanda</div>
+          <div className={`seg ${category === 'artigo_tecnico' ? 'on' : ''}`} onClick={() => setCategory('artigo_tecnico')}>Artigo Técnico</div>
         </div>
 
         <div className="field">
-          <label>Título da Publicação</label>
-          <input type="text" placeholder="Ex.: Concretagem da laje no Bloco A" value={title} onChange={e => setTitle(e.target.value)} required />
+          <label>Título da Obra / Publicação *</label>
+          <input 
+            type="text" 
+            placeholder="Ex: Concretagem de Laje Protendida - Edifício Horizon" 
+            value={title} 
+            onChange={e => setTitle(e.target.value)} 
+            required 
+          />
         </div>
 
         <div className="field">
-          <label>Descrição Técnica / Contexto</label>
-          <textarea placeholder="Descreva o escopo executado, fck do concreto ou normas aplicadas..." value={content} onChange={e => setContent(e.target.value)} required />
+          <label>Descrição Técnica / Especificação dos Materiais *</label>
+          <textarea 
+            rows={4}
+            placeholder="Descreva o escopo executado, fck do concreto utilizado, aditivos, armaduras ou normas técnicas aplicadas..." 
+            value={content} 
+            onChange={e => setContent(e.target.value)} 
+            required 
+          />
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
           <div className="field">
             <label>Orçamento Estimado (R$)</label>
-            <input type="number" className="mono" placeholder="250000" value={budget} onChange={e => setBudget(e.target.value)} />
+            <input type="number" className="mono" placeholder="1250000" value={budget} onChange={e => setBudget(e.target.value)} />
           </div>
 
           <div className="field">
-            <label>Prazo (Dias)</label>
-            <input type="number" className="mono" placeholder="60" value={deadline} onChange={e => setDeadline(e.target.value)} />
+            <label>Prazo de Execução (Dias)</label>
+            <input type="number" className="mono" placeholder="180" value={deadline} onChange={e => setDeadline(e.target.value)} />
           </div>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '8px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '10px' }}>
           <div className="field">
-            <label>Cidade</label>
+            <label>Cidade da Obra</label>
             <input type="text" value={city} onChange={e => setCity(e.target.value)} />
           </div>
           <div className="field">
             <label>UF</label>
-            <input type="text" className="mono" value={state} onChange={e => setState(e.target.value)} />
+            <input type="text" value={state} onChange={e => setState(e.target.value)} maxLength={2} />
           </div>
         </div>
 
         <div className="field">
-          <label>Imagem da Obra (URL)</label>
-          <input type="url" className="mono" value={imageUrl} onChange={e => setImageUrl(e.target.value)} />
+          <label>Foto / Imagem da Obra (URL)</label>
+          <input type="url" value={imageUrl} onChange={e => setImageUrl(e.target.value)} placeholder="https://..." />
         </div>
 
-        <button type="submit" className="btn primary" style={{ width: '100%', justifyContent: 'center', marginTop: '4px' }}>
-          <CheckCircle2 size={14} /> Publicar no Feed com Carimbo Técnico
+        <button type="submit" className="btn primary" style={{ width: '100%', justifyContent: 'center', marginTop: '6px', padding: '10px 16px', fontSize: '13px' }}>
+          <CheckCircle2 size={16} /> Publicar no Feed com Carimbo Técnico Digital
         </button>
       </form>
     </Modal>

@@ -79,29 +79,35 @@ export const QuoteModal: React.FC<QuoteModalProps> = ({
     : 'Nova Cotação de Materiais';
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={title} maxWidth="560px">
+    <Modal isOpen={isOpen} onClose={onClose} title={title} maxWidth="600px">
       <form onSubmit={handleSubmit} className="form-wrap" style={{ padding: 0 }}>
         
-        <div style={{ background: 'var(--paper)', border: '1px solid var(--steel-line)', padding: '10px 14px', borderRadius: '3px', marginBottom: '14px' }}>
-          <div style={{ fontSize: '11.5px', fontWeight: 600, color: 'var(--ink)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <ShoppingCart size={14} color="var(--accent)" /> Lista de Itens para Cotação
+        <div style={{ 
+          background: 'var(--primary-bg)', 
+          border: '1px solid rgba(37, 99, 235, 0.15)', 
+          padding: '12px 16px', 
+          borderRadius: 'var(--radius-md)', 
+          marginBottom: '16px' 
+        }}>
+          <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--primary-color)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <ShoppingCart size={15} /> Lista de Insumos / Materiais para Cotação
           </div>
-          <div style={{ fontSize: '10.5px', color: 'var(--steel)', marginTop: '2px' }}>
-            Adicione os materiais ou serviços necessários com quantidades estimadas.
+          <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '2px' }}>
+            Adicione itens com quantidades e unidades para receber propostas com frete e prazos.
           </div>
         </div>
 
         {/* Dynamic Items List */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '12px' }}>
           {items.map((item, idx) => (
-            <div key={idx} style={{ display: 'grid', gridTemplateColumns: '2fr 80px 70px 30px', gap: '6px', alignItems: 'center' }}>
+            <div key={idx} style={{ display: 'grid', gridTemplateColumns: '2fr 85px 85px 32px', gap: '8px', alignItems: 'center' }}>
               <input 
                 type="text" 
                 placeholder="Ex: Cimento CP-II (saco 50kg)" 
                 value={item.productName}
                 onChange={e => handleItemChange(idx, 'productName', e.target.value)}
                 required
-                style={{ fontSize: '12px' }}
+                style={{ fontSize: '12.5px' }}
               />
               <input 
                 type="number" 
@@ -110,12 +116,12 @@ export const QuoteModal: React.FC<QuoteModalProps> = ({
                 value={item.quantity}
                 onChange={e => handleItemChange(idx, 'quantity', Number(e.target.value))}
                 required
-                style={{ fontSize: '12px' }}
+                style={{ fontSize: '12.5px' }}
               />
               <select 
                 value={item.unit}
                 onChange={e => handleItemChange(idx, 'unit', e.target.value)}
-                style={{ fontSize: '11px', padding: '8px 4px', border: '1px solid var(--steel-line)', borderRadius: '3px', background: 'var(--white)' }}
+                style={{ fontSize: '12px', padding: '9px 6px', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', background: 'var(--bg-card)' }}
               >
                 <option value="un">un</option>
                 <option value="saco">sacos</option>
@@ -126,15 +132,15 @@ export const QuoteModal: React.FC<QuoteModalProps> = ({
                 <option value="barra">barras</option>
                 <option value="diária">diárias</option>
               </select>
-              {items.length > 1 && (
+              {items.length > 1 ? (
                 <button 
                   type="button" 
                   onClick={() => handleRemoveItem(idx)}
-                  style={{ background: 'transparent', border: 'none', color: 'var(--line)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                  style={{ background: 'transparent', border: 'none', color: '#EF4444', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', height: '36px' }}
                 >
-                  <Trash2 size={13} />
+                  <Trash2 size={15} />
                 </button>
-              )}
+              ) : <div />}
             </div>
           ))}
         </div>
@@ -143,15 +149,15 @@ export const QuoteModal: React.FC<QuoteModalProps> = ({
           type="button" 
           onClick={handleAddItem}
           className="btn ghost" 
-          style={{ width: '100%', justifyContent: 'center', marginBottom: '14px', fontSize: '10.5px' }}
+          style={{ width: '100%', justifyContent: 'center', marginBottom: '16px', fontSize: '12px', padding: '8px' }}
         >
-          <Plus size={12} /> Adicionar Outro Item à Cotação
+          <Plus size={13} /> Adicionar Outro Item à Cotação
         </button>
 
         {/* Location & Contact */}
-        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: '8px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: '10px' }}>
           <div className="field">
-            <label>Endereço de Entrega / Obra</label>
+            <label>Endereço de Entrega / Local da Obra</label>
             <input 
               type="text" 
               placeholder="Ex: Av. das Indústrias, 500" 
@@ -182,7 +188,7 @@ export const QuoteModal: React.FC<QuoteModalProps> = ({
         </div>
 
         <div className="field">
-          <label>WhatsApp / Telefone para Retorno da Proposta</label>
+          <label>WhatsApp / Telefone para Retorno da Proposta *</label>
           <input 
             type="text" 
             placeholder="(11) 98765-4321" 
@@ -193,7 +199,7 @@ export const QuoteModal: React.FC<QuoteModalProps> = ({
         </div>
 
         <div className="field">
-          <label>Observações Adicionais / Prazo Desejado</label>
+          <label>Observações Adicionais / Prazo de Descarregamento</label>
           <textarea 
             rows={2} 
             placeholder="Ex: Necessidade de descarga no local com caminhão munck até sexta-feira."
@@ -202,8 +208,8 @@ export const QuoteModal: React.FC<QuoteModalProps> = ({
           />
         </div>
 
-        <button type="submit" disabled={loading} className="btn primary" style={{ width: '100%', justifyContent: 'center', marginTop: '6px' }}>
-          {loading ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />} Enviar Solicitação de Cotação Real
+        <button type="submit" disabled={loading} className="btn primary" style={{ width: '100%', justifyContent: 'center', marginTop: '6px', padding: '10px 16px', fontSize: '13px' }}>
+          {loading ? <Loader2 size={15} className="animate-spin" /> : <Send size={15} />} Enviar Solicitação de Cotação
         </button>
       </form>
     </Modal>
