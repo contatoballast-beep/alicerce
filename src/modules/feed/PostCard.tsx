@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Post, UserProfile } from '../../types';
 import { CarimboTecnico } from '../../design-system/CarimboTecnico';
-import { ThumbsUp, MessageSquare, Send, Bookmark, Sparkles } from 'lucide-react';
+import { RealApiClient } from '../../services/realApiClient';
+import { ThumbsUp, MessageSquare, Send, Bookmark, Sparkles, Cpu, Zap, ExternalLink } from 'lucide-react';
 
 interface PostCardProps {
-  post: Post;
+  post: Post & { rankingReason?: string; algorithmScore?: number };
   currentUser: UserProfile;
   onLike: (postId: string) => void;
   onOpenProposalModal: (oppId?: string) => void;
@@ -20,11 +21,39 @@ export const PostCard: React.FC<PostCardProps> = ({
 }) => {
   const [saved, setSaved] = useState(false);
 
+  useEffect(() => {
+    if (post.isSponsored && post.id.startsWith('ad_post_')) {
+      const campId = post.id.replace('ad_post_', '');
+      RealApiClient.trackAdImpression(campId);
+    }
+  }, [post.id, post.isSponsored]);
+
+  const handleAdClick = () => {
+    if (post.isSponsored && post.id.startsWith('ad_post_')) {
+      const campId = post.id.replace('ad_post_', '');
+      RealApiClient.trackAdClick(campId);
+    }
+    onOpenChat(post.authorId, post.authorName);
+  };
+
   const initials = post.authorName.split(' ').map(n => n[0]).join('').substring(0, 2);
 
   return (
     <article className="card" style={{ marginBottom: '18px' }}>
       
+      {/* Algorithm Relevance Bar */}
+      {post.rankingReason && (
+        <div style={{ background: 'var(--paper)', borderBottom: '1px solid var(--steel-line)', padding: '4px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '10px', color: 'var(--steel)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+            <Zap size={11} color="var(--accent)" />
+            <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 500 }}>{post.rankingReason}</span>
+          </div>
+          {post.algorithmScore && post.algorithmScore < 900 && (
+            <span className="mono" style={{ fontSize: '9px', color: 'var(--accent)' }}>Score: {post.algorithmScore} pts</span>
+          )}
+        </div>
+      )}
+
       {/* Card Head */}
       <div className="card-head" style={{ display: 'flex', alignItems: 'center', gap: '9px', padding: '11px 13px 9px' }}>
         <div className="avatar">{initials}</div>
@@ -103,6 +132,12 @@ export const PostCard: React.FC<PostCardProps> = ({
           >
             <ThumbsUp size={13} /> {post.likesCount}
           </button>
+
+          {post.isSponsored && (
+            <button onClick={handleAdClick} className="btn accent" style={{ padding: '4px 8px', fontSize: '9.5px', background: 'var(--line)', borderColor: 'var(--line)', color: '#FFF' }}>
+              <ExternalLink size={10} /> Contatar Anunciante
+            </button>
+          )}
 
           {post.category === 'oportunidade' && (
             <button onClick={() => onOpenProposalModal()} className="btn accent" style={{ padding: '4px 8px', fontSize: '9.5px' }}>

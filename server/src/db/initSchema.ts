@@ -616,7 +616,50 @@ export async function initSchema() {
         });
       }
 
-      console.log('[Turso DB] Seed de dados operacionais concluído com sucesso!');
+      // 10. Initial Active Ad Campaigns
+      await db.execute({
+        sql: `INSERT INTO ad_campaigns (id, user_id, title, objective, target_region, daily_budget, total_budget, duration_days, impressions_count, clicks_count, status, payment_method, pix_qr_code, pix_copia_cola, invoice_nfse_url, created_at)
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'ativa', 'pix', ?, ?, ?, ?)`,
+        args: [
+          'camp_1',
+          'usr_fornecedor',
+          'Polimix Concreto - Entrega Expressa de Concreto Usinado fck 30 MPa com Bomba em SP',
+          'Venda Direta de Materiais',
+          'São Paulo e Região Metropolitana',
+          80,
+          1120,
+          14,
+          1840,
+          94,
+          'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=00020126580014BR.GOV.BCB.PIX',
+          '00020126580014BR.GOV.BCB.PIX0136alicerce-pay@bancopix.com.br5204000053039865401120.005802BR5916ALICERCE ADS6009SAO PAULO62070503***6304ABCD',
+          'NFS-e_ALICERCE_882910.pdf',
+          new Date().toLocaleDateString('pt-BR')
+        ]
+      });
+
+      await db.execute({
+        sql: `INSERT INTO ad_campaigns (id, user_id, title, objective, target_region, daily_budget, total_budget, duration_days, impressions_count, clicks_count, status, payment_method, pix_qr_code, pix_copia_cola, invoice_nfse_url, created_at)
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'ativa', 'pix', ?, ?, ?, ?)`,
+        args: [
+          'camp_2',
+          'usr_construtora',
+          'Vanguard Construtora - Contratação de Empreiteiras Hidráulica e Elétrica para Edifícios',
+          'Captação de Leads e Obras',
+          'São Paulo e Campinas - SP',
+          60,
+          840,
+          14,
+          1250,
+          68,
+          'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=00020126580014BR.GOV.BCB.PIX',
+          '00020126580014BR.GOV.BCB.PIX0136alicerce-pay@bancopix.com.br520400005303986540840.005802BR5916ALICERCE ADS6009SAO PAULO62070503***6304WXYZ',
+          'NFS-e_ALICERCE_991823.pdf',
+          new Date().toLocaleDateString('pt-BR')
+        ]
+      });
+
+      console.log('[Turso DB] Seed de dados operacionais e campanhas de ads concluído com sucesso!');
     }
 
   } catch (err) {

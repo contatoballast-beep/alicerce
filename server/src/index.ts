@@ -1058,8 +1058,37 @@ app.patch('/api/admin/users/:id/verify', async (req, res) => {
    ========================================================================== */
 app.get('/api/ads/campaigns', async (req, res) => {
   try {
-    const result = await db.execute("SELECT * FROM ad_campaigns ORDER BY id DESC");
-    res.json(result.rows);
+    const { userId } = req.query;
+    let sql = "SELECT * FROM ad_campaigns";
+    const args: any[] = [];
+    if (userId) {
+      sql += " WHERE user_id = ?";
+      args.push(userId);
+    }
+    sql += " ORDER BY id DESC";
+    const result = await db.execute({ sql, args });
+
+    const formatted = result.rows.map((row: any) => ({
+      id: row.id,
+      userId: row.user_id,
+      title: row.title,
+      objective: row.objective,
+      targetAudience: ['Engenheiros', 'Construtoras'],
+      targetRegion: row.target_region,
+      dailyBudget: Number(row.daily_budget),
+      totalBudget: Number(row.total_budget),
+      durationDays: Number(row.duration_days),
+      impressionsCount: Number(row.impressions_count || 0),
+      clicksCount: Number(row.clicks_count || 0),
+      status: row.status,
+      paymentMethod: row.payment_method,
+      pixQrCode: row.pix_qr_code,
+      pixCopiaCola: row.pix_copia_cola,
+      invoiceNfseUrl: row.invoice_nfse_url,
+      createdAt: row.created_at
+    }));
+
+    res.json(formatted);
   } catch (err: any) {
     res.status(500).json({ error: 'Erro ao buscar campanhas' });
   }
@@ -1070,7 +1099,7 @@ app.post('/api/ads/campaigns', async (req, res) => {
     const { userId, title, objective, targetRegion, dailyBudget, totalBudget, durationDays, paymentMethod } = req.body;
     const campId = `camp_${Date.now()}`;
     const hash = Math.random().toString(36).substring(2, 10).toUpperCase();
-    const pixCode = `00020126580014BR.GOV.BCB.PIX0136alicerce-pay@bancopix.com.br520400005303986540${totalBudget.toFixed(2)}5802BR5916ALICERCE ADS SAO PAULO6009SAO PAULO62070503***6304${hash}`;
+    const pixCode = `00020126580014BR.GOV.BCB.PIX0136alicerce-pay@bancopix.com.br520400005303986540${Number(totalBudget || 700).toFixed(2)}5802BR5916ALICERCE ADS SAO PAULO6009SAO PAULO62070503***6304${hash}`;
 
     await db.execute({
       sql: `INSERT INTO ad_campaigns (id, user_id, title, objective, target_region, daily_budget, total_budget, duration_days, impressions_count, clicks_count, status, payment_method, pix_qr_code, pix_copia_cola, invoice_nfse_url, created_at)
@@ -1081,9 +1110,9 @@ app.post('/api/ads/campaigns', async (req, res) => {
         title,
         objective || 'Captação de Leads',
         targetRegion || 'São Paulo e SP',
-        dailyBudget,
-        totalBudget,
-        durationDays,
+        dailyBudget || 50,
+        totalBudget || 700,
+        durationDays || 14,
         paymentMethod || 'pix',
         `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(pixCode)}`,
         pixCode,
@@ -1092,9 +1121,86 @@ app.post('/api/ads/campaigns', async (req, res) => {
       ]
     });
 
-    res.status(201).json({ id: campId, pixCopiaCola: pixCode, status: 'ativa' });
+    const newCamp = {
+      id: campId,
+      userId: userId || 'usr_curr',
+      title,
+      objective: objective || 'Captação de Leads',
+      targetAudience: ['Engenheiros', 'Construtoras'],
+      targetRegion: targetRegion || 'São Paulo e SP',
+      dailyBudget: Number(dailyBudget || 50),
+      totalBudget: Number(totalBudget || 700),
+      durationDays: Number(durationDays || 14),
+      impressionsCount: 0,
+      clicksCount: 0,
+      status: 'ativa',
+      paymentMethod: paymentMethod || 'pix',
+      pixQrCode: `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(pixCode)}`,
+      pixCopiaCola: pixCode,
+      invoiceNfseUrl: `NFS-e_ALICERCE_${Math.floor(100000 + Math.random() * 900000)}.pdf`,
+      createdAt: new Date().toLocaleDateString('pt-BR')
+    };
+
+    res.status(201).json(newCamp);
   } catch (err: any) {
     res.status(500).json({ error: 'Erro ao criar campanha de anúncios' });
+  }
+});
+
+app.post('/api/ads/campaigns/:id/pay', async (req, res) => {
+  try {
+    const campId = req.params.id;
+    await db.execute({
+      sql: "UPDATE ad_campaigns SET status = 'ativa' WHERE id = ?",
+      args: [campId]
+    });
+    res.json({ success: true, id: campId, status: 'ativa' });
+  } catch (err: any) {
+    res.status(500).json({ error: 'Erro ao processar pagamento de anúncio' });
+  }
+});
+
+app.post('/api/ads/campaigns/:id/toggle', async (req, res) => {
+  try {
+    const campId = req.params.id;
+    const { status } = req.body;
+    await db.execute({
+      sql: "UPDATE ad_campaigns SET status = ? WHERE id = ?",
+      args: [status, campId]
+    });
+    res.json({ success: true, id: campId, status });
+  } catch (err: any) {
+    res.status(500).json({ error: 'Erro ao alterar status da campanha' });
+  }
+});
+
+app.post('/api/ads/track/impression', async (req, res) => {
+  try {
+    const { campaignId } = req.body;
+    if (campaignId) {
+      await db.execute({
+        sql: "UPDATE ad_campaigns SET impressions_count = impressions_count + 1 WHERE id = ?",
+        args: [campaignId]
+      });
+    }
+    res.json({ tracked: true, type: 'impression' });
+  } catch (err: any) {
+    res.json({ tracked: false });
+  }
+});
+
+app.post('/api/ads/track/click', async (req, res) => {
+  try {
+    const { campaignId } = req.body;
+    if (campaignId) {
+      await db.execute({
+        sql: "UPDATE ad_campaigns SET clicks_count = clicks_count + 1 WHERE id = ?",
+        args: [campaignId]
+      });
+    }
+    res.json({ tracked: true, type: 'click' });
+  } catch (err: any) {
+    res.json({ tracked: false });
   }
 });
 

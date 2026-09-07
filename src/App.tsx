@@ -181,10 +181,11 @@ export const App: React.FC = () => {
     showToast("Campanha criada! Efetue o pagamento Pix para ativar.");
   };
 
-  const handleConfirmPayment = (campaignId: string) => {
-    const updated = campaigns.map(c => c.id === campaignId ? { ...c, status: 'ativa' as const } : c);
+  const handleConfirmPayment = async (campaignId: string) => {
+    await RealApiClient.payCampaign(campaignId);
+    const updated = await RealApiClient.getCampaigns();
     setCampaigns(updated);
-    showToast("Pagamento Pix recebido! NFS-e emitida e anúncio impulsionado.");
+    showToast("Pagamento Pix recebido! NFS-e emitida e anúncio impulsionado no feed.");
   };
 
   const handleSendMessage = async (threadId: string, text: string, attachmentUrl?: string) => {
@@ -291,6 +292,7 @@ export const App: React.FC = () => {
         {activeTab === 'feed' && (
           <FeedView 
             posts={posts}
+            campaigns={campaigns}
             currentUser={currentUser}
             onLikePost={handleLikePost}
             onOpenCreatePost={() => setCreatePostOpen(true)}

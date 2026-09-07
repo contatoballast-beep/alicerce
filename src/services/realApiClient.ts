@@ -524,9 +524,10 @@ export const RealApiClient = {
   },
 
   // 10. Ads Campaigns
-  async getCampaigns(): Promise<AdCampaign[]> {
+  async getCampaigns(userId?: string): Promise<AdCampaign[]> {
     try {
-      const res = await fetch(`${API_BASE_URL}/api/ads/campaigns`);
+      const url = userId ? `${API_BASE_URL}/api/ads/campaigns?userId=${userId}` : `${API_BASE_URL}/api/ads/campaigns`;
+      const res = await fetch(url);
       if (res.ok) {
         const data = await res.json();
         if (Array.isArray(data) && data.length > 0) {
@@ -548,13 +549,62 @@ export const RealApiClient = {
       });
       if (res.ok) {
         const data = await res.json();
-        const localCamp = LocalApiService.addCampaign(campData);
-        return { ...localCamp, ...data };
+        LocalApiService.addCampaign(data);
+        return data;
       }
     } catch (err) {
       console.warn('[API Client] Fallback para LocalApiService ao criar campanha:', err);
     }
     return LocalApiService.addCampaign(campData);
+  },
+
+  async payCampaign(campaignId: string): Promise<boolean> {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/ads/campaigns/${campaignId}/pay`, {
+        method: 'POST',
+        headers: getHeaders(),
+      });
+      return res.ok;
+    } catch (err) {
+      return false;
+    }
+  },
+
+  async toggleCampaign(campaignId: string, status: 'ativa' | 'pausada'): Promise<boolean> {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/ads/campaigns/${campaignId}/toggle`, {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify({ status }),
+      });
+      return res.ok;
+    } catch (err) {
+      return false;
+    }
+  },
+
+  async trackAdImpression(campaignId: string): Promise<void> {
+    try {
+      await fetch(`${API_BASE_URL}/api/ads/track/impression`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ campaignId }),
+      });
+    } catch (err) {
+      // Non-blocking telemetry
+    }
+  },
+
+  async trackAdClick(campaignId: string): Promise<void> {
+    try {
+      await fetch(`${API_BASE_URL}/api/ads/track/click`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ campaignId }),
+      });
+    } catch (err) {
+      // Non-blocking telemetry
+    }
   },
 
   // 11. Chat Messages & WebSocket
