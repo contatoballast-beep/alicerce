@@ -93,29 +93,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     }
   };
 
-  // Quick Demo Logins
-  const handleQuickLogin = async (demoEmail: string, demoPass: string) => {
-    setEmail(demoEmail);
-    setPassword(demoPass);
-    setLoading(true);
-    setErrorMessage(null);
-
-    const res = await RealApiClient.login(demoEmail, demoPass);
-    setLoading(false);
-
-    if (res.user && !res.error) {
-      onLoginSuccess(res.user);
-      onClose();
-    } else {
-      setErrorMessage(res.error || 'Não foi possível conectar ao servidor.');
-    }
-  };
-
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={mode === 'login' ? 'Entrar no ALICERCE' : 'Criar Nova Conta'} maxWidth="520px">
+    <Modal isOpen={isOpen} onClose={onClose} title={mode === 'login' ? 'Entrar no ALICERCE' : 'Criar Nova Conta'} maxWidth="480px">
       
       {/* Mode Switcher Segments */}
-      <div className="segrow" style={{ marginBottom: '16px' }}>
+      <div className="segrow" style={{ marginBottom: '18px' }}>
         <div className={`seg ${mode === 'login' ? 'on' : ''}`} onClick={() => { setMode('login'); setErrorMessage(null); }}>
           Acessar Minha Conta
         </div>
@@ -143,91 +125,33 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       )}
 
       {mode === 'login' ? (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        <form onSubmit={handleLogin} className="form-wrap" style={{ padding: 0 }}>
+          <div className="field">
+            <label>E-mail Cadastrado *</label>
+            <input 
+              type="email" 
+              placeholder="seuemail@empresa.com.br" 
+              value={email} 
+              onChange={e => setEmail(e.target.value)} 
+              required 
+            />
+          </div>
           
-          <form onSubmit={handleLogin} className="form-wrap" style={{ padding: 0 }}>
-            <div className="field">
-              <label>E-mail Cadastrado *</label>
-              <input 
-                type="email" 
-                placeholder="seuemail@empresa.com.br" 
-                value={email} 
-                onChange={e => setEmail(e.target.value)} 
-                required 
-              />
-            </div>
-            
-            <div className="field">
-              <label>Senha *</label>
-              <input 
-                type="password" 
-                placeholder="••••••••" 
-                value={password} 
-                onChange={e => setPassword(e.target.value)} 
-                required 
-              />
-            </div>
-
-            <button type="submit" disabled={loading} className="btn primary" style={{ width: '100%', justifyContent: 'center', marginTop: '6px', padding: '10px 16px', fontSize: '13px' }}>
-              {loading ? <Loader2 size={15} className="animate-spin" /> : <UserCheck size={15} />} Entrar na Plataforma
-            </button>
-          </form>
-
-          {/* Quick Access Demo Accounts */}
-          <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '16px', marginTop: '4px' }}>
-            <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.04em', marginBottom: '10px' }}>
-              ⚡ Acesso de Demonstração Rápido (1 Clique):
-            </div>
-            
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-              <button 
-                type="button" 
-                onClick={() => handleQuickLogin('roberto.silva@alicerce.com.br', 'alicerce2026')}
-                className="btn ghost" 
-                style={{ fontSize: '11.5px', padding: '8px 10px', justifyContent: 'flex-start' }}
-              >
-                <HardHat size={14} color="var(--primary-color)" /> Eng. Roberto Silva
-              </button>
-
-              <button 
-                type="button" 
-                onClick={() => handleQuickLogin('camila.torres@alicerce.com.br', 'alicerce2026')}
-                className="btn ghost" 
-                style={{ fontSize: '11.5px', padding: '8px 10px', justifyContent: 'flex-start' }}
-              >
-                <Building2 size={14} color="var(--accent-color)" /> Arqª. Camila Torres
-              </button>
-
-              <button 
-                type="button" 
-                onClick={() => handleQuickLogin('contato@vanguard.com.br', 'alicerce2026')}
-                className="btn ghost" 
-                style={{ fontSize: '11.5px', padding: '8px 10px', justifyContent: 'flex-start' }}
-              >
-                <Building2 size={14} color="var(--primary-color)" /> Vanguard Construtora
-              </button>
-
-              <button 
-                type="button" 
-                onClick={() => handleQuickLogin('vendas@polimixalicerce.com.br', 'alicerce2026')}
-                className="btn ghost" 
-                style={{ fontSize: '11.5px', padding: '8px 10px', justifyContent: 'flex-start' }}
-              >
-                <Truck size={14} color="#10B981" /> Polimix Materiais
-              </button>
-
-              <button 
-                type="button" 
-                onClick={() => handleQuickLogin('admin@alicerce.com.br', 'alicerce2026')}
-                className="btn ghost" 
-                style={{ gridColumn: 'span 2', fontSize: '11.5px', padding: '8px 10px', justifyContent: 'center', color: 'var(--text-heading)', fontWeight: 600 }}
-              >
-                <ShieldAlert size={14} /> Painel Administrador Geral (Gestor ALICERCE)
-              </button>
-            </div>
+          <div className="field">
+            <label>Senha *</label>
+            <input 
+              type="password" 
+              placeholder="••••••••" 
+              value={password} 
+              onChange={e => setPassword(e.target.value)} 
+              required 
+            />
           </div>
 
-        </div>
+          <button type="submit" disabled={loading} className="btn primary" style={{ width: '100%', justifyContent: 'center', marginTop: '10px', padding: '11px 16px', fontSize: '13.5px' }}>
+            {loading ? <Loader2 size={16} className="animate-spin" /> : <UserCheck size={16} />} Entrar na Plataforma
+          </button>
+        </form>
       ) : (
         <form onSubmit={handleRegister} className="form-wrap" style={{ padding: 0 }}>
           <div className="field">

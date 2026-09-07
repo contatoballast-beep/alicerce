@@ -613,6 +613,40 @@ export async function initSchema() {
       await db.execute("ALTER TABLE conversations ADD COLUMN participant_two_role TEXT");
     } catch(e) {}
 
+    // Ensure rhuangumbi@gmail.com is registered as Admin
+    try {
+      const checkRhuan = await db.execute({
+        sql: "SELECT id FROM users WHERE LOWER(email) = LOWER(?)",
+        args: ['rhuangumbi@gmail.com']
+      });
+
+      const passHash = await bcrypt.hash('alicerce2026', 10);
+      const now = new Date().toISOString();
+
+      if (checkRhuan.rows.length === 0) {
+        await db.execute({
+          sql: `INSERT INTO users (id, name, email, password_hash, role, crea_cau_number, phone, whatsapp, city, state, bio, avatar, is_verified, verification_status, consent_lgpd, plan, created_at)
+                VALUES (?, ?, ?, ?, 'admin', 'CREA-BR 000001/D', '(11) 99999-9999', '5511999999999', 'São Paulo', 'SP', 'Administrador Geral da Plataforma ALICERCE.', 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80', 1, 'verified', 1, 'admin', ?)`,
+          args: [
+            'usr_rhuan_admin',
+            'Rhuan Gumbi',
+            'rhuangumbi@gmail.com',
+            passHash,
+            now
+          ]
+        });
+        console.log('[Turso DB] Usuário rhuangumbi@gmail.com criado com privilégios de Admin.');
+      } else {
+        await db.execute({
+          sql: "UPDATE users SET role = 'admin', is_verified = 1, verification_status = 'verified', plan = 'admin' WHERE LOWER(email) = LOWER(?)",
+          args: ['rhuangumbi@gmail.com']
+        });
+        console.log('[Turso DB] Usuário rhuangumbi@gmail.com promovido para Admin com sucesso.');
+      }
+    } catch (e) {
+      console.error('[Turso DB] Erro ao configurar admin rhuangumbi@gmail.com:', e);
+    }
+
   } catch (err) {
     console.error('[Turso DB] Erro ao inicializar schema:', err);
   }

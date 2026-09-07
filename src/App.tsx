@@ -372,26 +372,6 @@ export const App: React.FC = () => {
         unreadMessagesCount={1}
       />
 
-      {/* Server Connectivity Banner */}
-      <div style={{ 
-        background: 'var(--bg-card)', 
-        borderBottom: '1px solid var(--border-color)', 
-        padding: '6px 20px', 
-        display: 'flex', 
-        justifyContent: 'space-between', 
-        alignItems: 'center', 
-        fontSize: '11.5px', 
-        color: 'var(--text-muted)' 
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span style={{ display: 'inline-block', width: '7px', height: '7px', borderRadius: '50%', background: serverOnline ? '#10B981' : '#F59E0B' }}></span>
-          <span>{serverOnline ? 'Backend API REST & SQLite Cloud DB: Conectados e Operacionais' : 'Modo Híbrido: Conexão Local Ativa'}</span>
-        </div>
-        <div style={{ fontSize: '11px', fontFamily: 'var(--font-mono)' }}>
-          Realtime WebSocket: {serverOnline ? 'Online (WSS)' : 'Pronto'}
-        </div>
-      </div>
-
       {/* Main View Router */}
       <main style={{ flex: 1 }}>
         

@@ -380,6 +380,12 @@ p {
   padding: 0 16px;
 }
 
+@media (max-width: 1024px) {
+  .desktop-label {
+    display: none;
+  }
+}
+
 @media (max-width: 768px) {
   .desktop-nav {
     display: none !important;

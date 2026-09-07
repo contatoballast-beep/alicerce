@@ -101,7 +101,11 @@ export const RealApiClient = {
       let creaCau: string | undefined = 'CREA-SP 5069824/D';
       let cnpj: string | undefined = undefined;
 
-      if (email.includes('camila')) {
+      if (email.toLowerCase().includes('rhuangumbi') || email.toLowerCase().includes('admin')) {
+        role = 'admin';
+        name = email.toLowerCase().includes('rhuangumbi') ? 'Rhuan Gumbi' : 'Administrador Geral';
+        creaCau = 'CREA-BR 000001/D';
+      } else if (email.includes('camila')) {
         role = 'profissional_cau';
         name = 'Arqª. Camila Torres';
         creaCau = 'CAU A88291-0';
@@ -115,9 +119,6 @@ export const RealApiClient = {
         name = 'Polimix Materiais & Concreto';
         cnpj = '44.821.903/0001-55';
         creaCau = undefined;
-      } else if (email.includes('admin')) {
-        role = 'admin';
-        name = 'Administrador Geral';
       }
 
       const fallbackUser: UserProfile = {

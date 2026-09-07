@@ -85,27 +85,31 @@ app.post('/api/auth/register', async (req, res) => {
 
     const passHash = await bcrypt.hash(password, 10);
     const userId = `usr_${Date.now()}`;
-    const userRole = role || 'cliente';
+    const isRhuanAdmin = email.toLowerCase() === 'rhuangumbi@gmail.com';
+    const userRole = isRhuanAdmin ? 'admin' : (role || 'cliente');
     const now = new Date().toISOString();
 
     const avatar = `https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80`;
 
     await db.execute({
       sql: `INSERT INTO users (id, name, email, password_hash, role, crea_cau_number, cnpj_number, phone, whatsapp, city, state, avatar, is_verified, verification_status, consent_lgpd, plan, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 'unverified', 1, 'gratuito', ?)`,
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)`,
       args: [
         userId,
         name,
         email,
         passHash,
         userRole,
-        creaCauNumber || null,
+        creaCauNumber || (isRhuanAdmin ? 'CREA-BR 000001/D' : null),
         cnpjNumber || null,
         phone || null,
         whatsapp || phone || null,
         city || 'São Paulo',
         state || 'SP',
         avatar,
+        isRhuanAdmin ? 1 : 0,
+        isRhuanAdmin ? 'verified' : 'unverified',
+        isRhuanAdmin ? 'admin' : 'gratuito',
         now
       ]
     });
@@ -166,14 +170,14 @@ app.post('/api/auth/register', async (req, res) => {
         name,
         email,
         role: userRole,
-        creaCauNumber,
+        creaCauNumber: isRhuanAdmin ? 'CREA-BR 000001/D' : creaCauNumber,
         cnpjNumber,
         phone,
         whatsapp,
         city: city || 'São Paulo',
         state: state || 'SP',
         avatar,
-        verified: false,
+        verified: isRhuanAdmin,
         consentLgpd: true,
         createdAt: now
       }
@@ -189,7 +193,7 @@ app.post('/api/auth/login', async (req, res) => {
     if (!email || !password) return res.status(400).json({ error: 'E-mail e senha são obrigatórios' });
 
     const result = await db.execute({
-      sql: "SELECT * FROM users WHERE email = ?",
+      sql: "SELECT * FROM users WHERE LOWER(email) = LOWER(?)",
       args: [email]
     });
 
@@ -203,7 +207,17 @@ app.post('/api/auth/login', async (req, res) => {
       return res.status(400).json({ error: 'Credenciais inválidas' });
     }
 
-    const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, JWT_SECRET, { expiresIn: '30d' });
+    const isRhuanAdmin = email.toLowerCase() === 'rhuangumbi@gmail.com';
+    const effectiveRole = isRhuanAdmin ? 'admin' : user.role;
+
+    if (isRhuanAdmin && user.role !== 'admin') {
+      await db.execute({
+        sql: "UPDATE users SET role = 'admin', is_verified = 1, verification_status = 'verified', plan = 'admin' WHERE LOWER(email) = LOWER(?)",
+        args: [email]
+      });
+    }
+
+    const token = jwt.sign({ id: user.id, email: user.email, role: effectiveRole }, JWT_SECRET, { expiresIn: '30d' });
 
     res.json({
       token,
@@ -211,7 +225,7 @@ app.post('/api/auth/login', async (req, res) => {
         id: user.id,
         name: user.name,
         email: user.email,
-        role: user.role,
+        role: effectiveRole,
         creaCauNumber: user.crea_cau_number,
         cnpjNumber: user.cnpj_number,
         phone: user.phone,
@@ -220,8 +234,8 @@ app.post('/api/auth/login', async (req, res) => {
         state: user.state,
         bio: user.bio,
         avatar: user.avatar,
-        verified: Boolean(user.is_verified),
-        plan: user.plan,
+        verified: isRhuanAdmin || Boolean(user.is_verified),
+        plan: isRhuanAdmin ? 'admin' : user.plan,
         createdAt: user.created_at
       }
     });
