@@ -11,7 +11,7 @@ interface FeedViewProps {
   onLikePost: (postId: string) => void;
   onOpenCreatePost: () => void;
   onOpenProposalModal: (oppId?: string) => void;
-  onOpenChat: (authorId: string, authorName: string) => void;
+  onOpenChat: (authorId: string, authorName: string, authorRole?: string, authorAvatar?: string) => void;
 }
 
 export const FeedView: React.FC<FeedViewProps> = ({

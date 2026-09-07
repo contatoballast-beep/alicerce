@@ -4,6 +4,7 @@ import {
   Opportunity, 
   AdCampaign, 
   ChatMessage, 
+  ChatThread,
   UserProfile, 
   UserRole,
   ProfessionalProfile,
@@ -608,12 +609,61 @@ export const RealApiClient = {
   },
 
   // 11. Chat Messages & WebSocket
-  async getMessages(threadId: string): Promise<ChatMessage[]> {
+  async getThreads(userId?: string): Promise<ChatThread[]> {
     try {
-      const res = await fetch(`${API_BASE_URL}/api/messages/${threadId}`);
+      const url = userId ? `${API_BASE_URL}/api/chat/threads?userId=${userId}` : `${API_BASE_URL}/api/chat/threads`;
+      const res = await fetch(url);
       if (res.ok) {
         const data = await res.json();
-        if (Array.isArray(data) && data.length > 0) {
+        if (Array.isArray(data)) {
+          return data;
+        }
+      }
+    } catch (err) {
+      console.warn('[API Client] Fallback LocalApiService para getThreads:', err);
+    }
+    return LocalApiService.getChatThreads();
+  },
+
+  async createOrGetThread(
+    participant: { id: string; name: string; role?: string; avatar?: string },
+    currentUser: UserProfile
+  ): Promise<ChatThread> {
+    try {
+      const payload = {
+        participantId: participant.id,
+        participantName: participant.name,
+        participantRole: participant.role || 'Profissional',
+        participantAvatar: participant.avatar,
+        currentUserId: currentUser.id,
+        currentUserName: currentUser.name,
+        currentUserRole: currentUser.role,
+        currentUserAvatar: currentUser.avatar,
+      };
+
+      const res = await fetch(`${API_BASE_URL}/api/chat/threads`, {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify(payload),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        LocalApiService.createOrGetThread(participant);
+        return data;
+      }
+    } catch (err) {
+      console.warn('[API Client] Fallback local para createOrGetThread:', err);
+    }
+    return LocalApiService.createOrGetThread(participant);
+  },
+
+  async getMessages(threadId: string): Promise<ChatMessage[]> {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/chat/messages/${threadId}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data)) {
           return data;
         }
       }
@@ -623,31 +673,48 @@ export const RealApiClient = {
     return LocalApiService.getMessages(threadId);
   },
 
-  async sendMessage(threadId: string, text: string, sender: UserProfile, attachmentUrl?: string): Promise<ChatMessage> {
+  async sendMessage(
+    threadId: string, 
+    text: string, 
+    sender: UserProfile, 
+    receiverId?: string, 
+    attachmentUrl?: string
+  ): Promise<ChatMessage> {
     const payload = {
       threadId,
       senderId: sender.id,
       senderName: sender.name,
-      receiverId: 'usr_camila',
+      receiverId: receiverId || 'usr_participant',
       text,
       attachmentUrl,
     };
 
     try {
-      const res = await fetch(`${API_BASE_URL}/api/messages`, {
+      const res = await fetch(`${API_BASE_URL}/api/chat/messages`, {
         method: 'POST',
         headers: getHeaders(),
         body: JSON.stringify(payload),
       });
       if (res.ok) {
         const data = await res.json();
-        LocalApiService.sendMessage(threadId, text, attachmentUrl);
+        LocalApiService.sendMessage(threadId, text, attachmentUrl, receiverId);
         return data;
       }
     } catch (err) {
       console.warn('[API Client] Fallback local para sendMessage:', err);
     }
-    return LocalApiService.sendMessage(threadId, text, attachmentUrl);
+    return LocalApiService.sendMessage(threadId, text, attachmentUrl, receiverId);
+  },
+
+  async markMessagesAsRead(threadId: string): Promise<void> {
+    try {
+      await fetch(`${API_BASE_URL}/api/chat/messages/${threadId}/read`, {
+        method: 'PATCH',
+        headers: getHeaders(),
+      });
+    } catch (err) {
+      // Non-blocking
+    }
   },
 
   connectWebSocket(onMessage: (msg: any) => void): WebSocket | null {

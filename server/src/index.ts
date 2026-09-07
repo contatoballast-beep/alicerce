@@ -1205,6 +1205,242 @@ app.post('/api/ads/track/click', async (req, res) => {
 });
 
 /* ==========================================================================
+   11. REAL CHAT & CONVERSATIONS API
+   ========================================================================== */
+
+function broadcastChatMessage(data: any) {
+  if (wss && wss.clients) {
+    wss.clients.forEach(client => {
+      if (client.readyState === WebSocket.OPEN) {
+        client.send(JSON.stringify({ type: 'NEW_MESSAGE', data }));
+      }
+    });
+  }
+}
+
+// List user conversation threads
+app.get('/api/chat/threads', async (req, res) => {
+  try {
+    const userId = (req.query.userId as string) || 'usr_curr';
+    const result = await db.execute({
+      sql: `SELECT * FROM conversations 
+            WHERE participant_one_id = ? OR participant_two_id = ? 
+            ORDER BY updated_at DESC`,
+      args: [userId, userId]
+    });
+
+    const threads = result.rows.map((r: any) => {
+      const isOne = r.participant_one_id === userId;
+      return {
+        id: r.id,
+        participantId: isOne ? r.participant_two_id : r.participant_one_id,
+        participantName: isOne ? r.participant_two_name : r.participant_one_name,
+        participantAvatar: (isOne ? r.participant_two_avatar : r.participant_one_avatar) || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+        participantRole: (isOne ? r.participant_two_role : r.participant_one_role) || 'Profissional',
+        lastMessage: r.last_message || '',
+        lastMessageTime: r.last_message_time || '',
+        unreadCount: 0
+      };
+    });
+
+    res.json(threads);
+  } catch (err: any) {
+    console.error('[Chat API] Erro ao listar threads:', err);
+    res.status(500).json({ error: 'Erro ao carregar conversas de chat' });
+  }
+});
+
+// Create or get existing conversation thread
+app.post('/api/chat/threads', async (req, res) => {
+  try {
+    const { 
+      participantId, 
+      participantName, 
+      participantAvatar, 
+      participantRole,
+      currentUserId,
+      currentUserName,
+      currentUserAvatar,
+      currentUserRole
+    } = req.body;
+
+    if (!participantId || !currentUserId) {
+      return res.status(400).json({ error: 'IDs dos participantes são obrigatórios' });
+    }
+
+    // Check if conversation already exists
+    const existing = await db.execute({
+      sql: `SELECT * FROM conversations 
+            WHERE (participant_one_id = ? AND participant_two_id = ?) 
+               OR (participant_one_id = ? AND participant_two_id = ?)`,
+      args: [currentUserId, participantId, participantId, currentUserId]
+    });
+
+    if (existing.rows.length > 0) {
+      const r: any = existing.rows[0];
+      const isOne = r.participant_one_id === currentUserId;
+      return res.json({
+        id: r.id,
+        participantId: isOne ? r.participant_two_id : r.participant_one_id,
+        participantName: isOne ? r.participant_two_name : r.participant_one_name,
+        participantAvatar: (isOne ? r.participant_two_avatar : r.participant_one_avatar) || participantAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+        participantRole: (isOne ? r.participant_two_role : r.participant_one_role) || participantRole || 'Profissional',
+        lastMessage: r.last_message || '',
+        lastMessageTime: r.last_message_time || '',
+        unreadCount: 0
+      });
+    }
+
+    // Create new conversation
+    const threadId = `thread_${Date.now()}`;
+    const now = new Date().toISOString();
+
+    await db.execute({
+      sql: `INSERT INTO conversations (
+              id, 
+              participant_one_id, 
+              participant_two_id, 
+              participant_one_name, 
+              participant_two_name, 
+              participant_one_avatar, 
+              participant_two_avatar, 
+              participant_one_role, 
+              participant_two_role, 
+              last_message, 
+              last_message_time, 
+              created_at, 
+              updated_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, '', 'Agora', ?, ?)`,
+      args: [
+        threadId,
+        currentUserId,
+        participantId,
+        currentUserName || 'Usuário ALICERCE',
+        participantName || 'Profissional',
+        currentUserAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+        participantAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+        currentUserRole || 'cliente',
+        participantRole || 'Profissional',
+        now,
+        now
+      ]
+    });
+
+    res.status(201).json({
+      id: threadId,
+      participantId,
+      participantName: participantName || 'Profissional',
+      participantAvatar: participantAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+      participantRole: participantRole || 'Profissional',
+      lastMessage: '',
+      lastMessageTime: 'Agora',
+      unreadCount: 0
+    });
+  } catch (err: any) {
+    console.error('[Chat API] Erro ao criar conversa:', err);
+    res.status(500).json({ error: 'Erro ao iniciar conversa' });
+  }
+});
+
+// Get messages for a thread
+app.get(['/api/chat/messages/:threadId', '/api/messages/:threadId'], async (req, res) => {
+  try {
+    const { threadId } = req.params;
+    const result = await db.execute({
+      sql: "SELECT * FROM messages WHERE thread_id = ? ORDER BY created_at ASC",
+      args: [threadId]
+    });
+
+    const messages = result.rows.map((r: any) => ({
+      id: r.id,
+      threadId: r.thread_id,
+      senderId: r.sender_id,
+      senderName: r.sender_name,
+      receiverId: r.receiver_id,
+      text: r.text,
+      attachmentUrl: r.attachment_url,
+      timestamp: r.timestamp,
+      read: Boolean(r.read)
+    }));
+
+    res.json(messages);
+  } catch (err: any) {
+    console.error('[Chat API] Erro ao buscar mensagens:', err);
+    res.status(500).json({ error: 'Erro ao carregar mensagens' });
+  }
+});
+
+// Send message
+app.post(['/api/chat/messages', '/api/messages'], async (req, res) => {
+  try {
+    const { threadId, senderId, senderName, receiverId, text, attachmentUrl } = req.body;
+    if (!threadId || !text) {
+      return res.status(400).json({ error: 'threadId e text são obrigatórios' });
+    }
+
+    const msgId = `msg_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+    const timestamp = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    const now = new Date().toISOString();
+
+    await db.execute({
+      sql: `INSERT INTO messages (id, thread_id, sender_id, sender_name, receiver_id, text, attachment_url, timestamp, read, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, ?)`,
+      args: [
+        msgId,
+        threadId,
+        senderId || 'usr_curr',
+        senderName || 'Usuário',
+        receiverId || '',
+        text,
+        attachmentUrl || null,
+        timestamp,
+        now
+      ]
+    });
+
+    // Update conversation last_message
+    await db.execute({
+      sql: "UPDATE conversations SET last_message = ?, last_message_time = ?, updated_at = ? WHERE id = ?",
+      args: [text, timestamp, now, threadId]
+    });
+
+    const newMsg = {
+      id: msgId,
+      threadId,
+      senderId: senderId || 'usr_curr',
+      senderName: senderName || 'Usuário',
+      receiverId: receiverId || '',
+      text,
+      attachmentUrl: attachmentUrl || undefined,
+      timestamp,
+      read: false
+    };
+
+    // Broadcast in real-time via WebSocket
+    broadcastChatMessage(newMsg);
+
+    res.status(201).json(newMsg);
+  } catch (err: any) {
+    console.error('[Chat API] Erro ao enviar mensagem:', err);
+    res.status(500).json({ error: 'Erro ao enviar mensagem' });
+  }
+});
+
+// Mark messages as read
+app.patch('/api/chat/messages/:threadId/read', async (req, res) => {
+  try {
+    const { threadId } = req.params;
+    await db.execute({
+      sql: "UPDATE messages SET read = 1 WHERE thread_id = ?",
+      args: [threadId]
+    });
+    res.json({ ok: true });
+  } catch (err: any) {
+    res.status(500).json({ error: 'Erro ao atualizar leitura' });
+  }
+});
+
+/* ==========================================================================
    12. FRONTEND PRODUCTION STATIC SERVING (Zero-Config Fullstack)
    ========================================================================== */
 const clientDistCandidates = [

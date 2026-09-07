@@ -8,6 +8,7 @@ const STORAGE_KEYS = {
   PROJECTS: 'alicerce_projects',
   CAMPAIGNS: 'alicerce_campaigns',
   MESSAGES: 'alicerce_messages',
+  THREADS: 'alicerce_chat_threads',
   MODERATION: 'alicerce_moderation',
 };
 
@@ -229,29 +230,72 @@ export const LocalApiService = {
     return newCamp;
   },
 
-  // Chat Messages
+  // Chat Messages & Threads
   getChatThreads(): ChatThread[] {
-    return MOCK_CHAT_THREADS;
+    return getStored<ChatThread[]>(STORAGE_KEYS.THREADS, []);
+  },
+
+  createOrGetThread(participant: { id: string; name: string; role?: string; avatar?: string }): ChatThread {
+    const threads = this.getChatThreads();
+    const existing = threads.find(t => t.participantId === participant.id);
+    if (existing) return existing;
+
+    const newThread: ChatThread = {
+      id: `thread_${Date.now()}`,
+      participantId: participant.id,
+      participantName: participant.name,
+      participantAvatar: participant.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+      participantRole: participant.role || 'Profissional',
+      lastMessage: '',
+      lastMessageTime: 'Agora',
+      unreadCount: 0,
+    };
+
+    const updated = [newThread, ...threads];
+    setStored(STORAGE_KEYS.THREADS, updated);
+    return newThread;
   },
 
   getMessages(threadId: string): ChatMessage[] {
-    return MOCK_MESSAGES[threadId] || [];
+    const allMsgs = getStored<Record<string, ChatMessage[]>>(STORAGE_KEYS.MESSAGES, {});
+    return allMsgs[threadId] || [];
   },
 
-  sendMessage(threadId: string, text: string, attachmentUrl?: string): ChatMessage {
+  sendMessage(threadId: string, text: string, attachmentUrl?: string, receiverId?: string): ChatMessage {
     const user = this.getUser();
-    const currentMsgs = this.getMessages(threadId);
+    const allMsgs = getStored<Record<string, ChatMessage[]>>(STORAGE_KEYS.MESSAGES, {});
+    const currentMsgs = allMsgs[threadId] || [];
+    
+    const timestamp = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
     const newMsg: ChatMessage = {
       id: `msg_${Date.now()}`,
+      threadId,
       senderId: user.id,
       senderName: user.name,
-      receiverId: 'usr_camila',
+      receiverId: receiverId || 'usr_participant',
       text,
       attachmentUrl,
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      timestamp,
       read: true,
     };
-    MOCK_MESSAGES[threadId] = [...currentMsgs, newMsg];
+
+    allMsgs[threadId] = [...currentMsgs, newMsg];
+    setStored(STORAGE_KEYS.MESSAGES, allMsgs);
+
+    // Update last message in thread
+    const threads = this.getChatThreads();
+    const updatedThreads = threads.map(t => {
+      if (t.id === threadId) {
+        return {
+          ...t,
+          lastMessage: text,
+          lastMessageTime: timestamp,
+        };
+      }
+      return t;
+    });
+    setStored(STORAGE_KEYS.THREADS, updatedThreads);
+
     return newMsg;
   },
 

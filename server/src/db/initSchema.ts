@@ -221,6 +221,10 @@ export async function initSchema() {
       participant_two_id TEXT NOT NULL,
       participant_one_name TEXT NOT NULL,
       participant_two_name TEXT NOT NULL,
+      participant_one_avatar TEXT,
+      participant_two_avatar TEXT,
+      participant_one_role TEXT,
+      participant_two_role TEXT,
       last_message TEXT,
       last_message_time TEXT,
       created_at TEXT NOT NULL,
@@ -593,9 +597,21 @@ export async function initSchema() {
           new Date().toLocaleDateString('pt-BR')
         ]
       });
-
-      console.log('[Turso DB] Seed de dados operacionais e campanhas de ads concluído com sucesso!');
     }
+
+    // Safe Migrations for conversations columns
+    try {
+      await db.execute("ALTER TABLE conversations ADD COLUMN participant_one_avatar TEXT");
+    } catch(e) {}
+    try {
+      await db.execute("ALTER TABLE conversations ADD COLUMN participant_two_avatar TEXT");
+    } catch(e) {}
+    try {
+      await db.execute("ALTER TABLE conversations ADD COLUMN participant_one_role TEXT");
+    } catch(e) {}
+    try {
+      await db.execute("ALTER TABLE conversations ADD COLUMN participant_two_role TEXT");
+    } catch(e) {}
 
   } catch (err) {
     console.error('[Turso DB] Erro ao inicializar schema:', err);

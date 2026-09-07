@@ -10,6 +10,7 @@ import {
   ModerationItem, 
   UserRole, 
   ChatMessage,
+  ChatThread,
   ProfessionalProfile,
   CompanyProfile,
   SupplierProfile,
@@ -52,15 +53,15 @@ export const App: React.FC = () => {
   const [campaigns, setCampaigns] = useState<AdCampaign[]>(LocalApiService.getCampaigns());
   const [moderationItems, setModerationItems] = useState<ModerationItem[]>(LocalApiService.getModerationQueue());
   const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
-
-  const [chatMessages, setChatMessages] = useState<Record<string, ChatMessage[]>>({
-    'thread_1': LocalApiService.getMessages('thread_1'),
-    'thread_2': LocalApiService.getMessages('thread_2'),
-    'thread_3': LocalApiService.getMessages('thread_3'),
+  
+  const [chatThreads, setChatThreads] = useState<ChatThread[]>(() => LocalApiService.getChatThreads());
+  const [activeThreadId, setActiveThreadId] = useState<string | null>(() => {
+    const t = LocalApiService.getChatThreads();
+    return t.length > 0 ? t[0].id : null;
   });
+  const [chatMessages, setChatMessages] = useState<Record<string, ChatMessage[]>>({});
 
   const [activeTab, setActiveTab] = useState<string>('feed');
-  const [activeThreadId, setActiveThreadId] = useState<string>('thread_1');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [serverOnline, setServerOnline] = useState<boolean | null>(null);
 
@@ -112,11 +113,12 @@ export const App: React.FC = () => {
 
       if (health.ok) {
         console.log('[ALICERCE] Backend conectado com sucesso!', health);
-        const [fetchedPosts, fetchedOpps, fetchedCamps, fetchedFavs] = await Promise.all([
+        const [fetchedPosts, fetchedOpps, fetchedCamps, fetchedFavs, fetchedThreads] = await Promise.all([
           RealApiClient.getPosts(),
           RealApiClient.getOpportunities(),
           RealApiClient.getCampaigns(),
           RealApiClient.getFavorites(currentUser.id),
+          RealApiClient.getThreads(currentUser.id),
         ]);
         const cleanPosts = (fetchedPosts || []).filter(p => !['post_1', 'post_2', 'post_3'].includes(p.id));
         setPosts(cleanPosts);
@@ -125,6 +127,10 @@ export const App: React.FC = () => {
         if (fetchedCamps) setCampaigns(fetchedCamps);
         if (fetchedFavs?.length) {
           setFavoriteIds(new Set(fetchedFavs.map(f => f.target_id)));
+        }
+        if (fetchedThreads?.length) {
+          setChatThreads(fetchedThreads);
+          setActiveThreadId(prev => prev || fetchedThreads[0].id);
         }
       }
       // Sync local projects
@@ -142,6 +148,18 @@ export const App: React.FC = () => {
           ...prev,
           [targetThread]: [...(prev[targetThread] || []), newMsg],
         }));
+
+        setChatThreads((prev) => prev.map(t => {
+          if (t.id === targetThread) {
+            return {
+              ...t,
+              lastMessage: newMsg.text,
+              lastMessageTime: newMsg.timestamp,
+            };
+          }
+          return t;
+        }));
+
         if (newMsg.senderId !== currentUser.id) {
           showToast(`💬 Nova mensagem de ${newMsg.senderName}`);
         }
@@ -208,17 +226,61 @@ export const App: React.FC = () => {
   };
 
   const handleSendMessage = async (threadId: string, text: string, attachmentUrl?: string) => {
-    const newMsg = await RealApiClient.sendMessage(threadId, text, currentUser, attachmentUrl);
+    const thread = chatThreads.find(t => t.id === threadId);
+    const newMsg = await RealApiClient.sendMessage(
+      threadId, 
+      text, 
+      currentUser, 
+      thread?.participantId, 
+      attachmentUrl
+    );
+    
     setChatMessages(prev => ({
       ...prev,
       [threadId]: [...(prev[threadId] || []), newMsg]
     }));
+
+    setChatThreads(prev => prev.map(t => {
+      if (t.id === threadId) {
+        return {
+          ...t,
+          lastMessage: text,
+          lastMessageTime: newMsg.timestamp,
+        };
+      }
+      return t;
+    }));
+
     showToast("Mensagem enviada no chat!");
   };
 
-  const handleOpenChat = (authorId: string, authorName: string) => {
+  const handleOpenChat = async (authorId: string, authorName: string, authorRole?: string, authorAvatar?: string) => {
+    const thread = await RealApiClient.createOrGetThread({
+      id: authorId,
+      name: authorName,
+      role: authorRole || 'Profissional',
+      avatar: authorAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+    }, currentUser);
+
+    const updatedThreads = await RealApiClient.getThreads(currentUser.id);
+    setChatThreads(updatedThreads);
+    setActiveThreadId(thread.id);
     setActiveTab('chat');
+    
+    // Load thread messages
+    const msgs = await RealApiClient.getMessages(thread.id);
+    setChatMessages(prev => ({ ...prev, [thread.id]: msgs }));
     showToast(`Conversa iniciada com ${authorName}`);
+  };
+
+  const getMessagesForThread = (threadId: string): ChatMessage[] => {
+    if (!chatMessages[threadId]) {
+      RealApiClient.getMessages(threadId).then(msgs => {
+        setChatMessages(prev => ({ ...prev, [threadId]: msgs }));
+      });
+      return LocalApiService.getMessages(threadId);
+    }
+    return chatMessages[threadId];
   };
 
   const handleToggleFavorite = async (target: any) => {
@@ -365,12 +427,13 @@ export const App: React.FC = () => {
 
         {activeTab === 'chat' && (
           <MessagingView 
-            threads={LocalApiService.getChatThreads()}
+            threads={chatThreads}
             currentUser={currentUser}
             activeThreadId={activeThreadId}
             onSelectThread={setActiveThreadId}
-            getMessages={(tId) => chatMessages[tId] || LocalApiService.getMessages(tId)}
+            getMessages={getMessagesForThread}
             onSendMessage={handleSendMessage}
+            onNavigateToDirectory={() => setActiveTab('directory')}
           />
         )}
 
@@ -501,6 +564,10 @@ export const App: React.FC = () => {
         }}
         onToggleFavorite={handleToggleFavorite}
         isFavorited={selectedProfileDetail ? favoriteIds.has(selectedProfileDetail.id) : false}
+        onStartChat={(prof) => {
+          setProfileModalOpen(false);
+          handleOpenChat(prof.id, prof.name, prof.profession || prof.category || 'Profissional', prof.avatar);
+        }}
       />
 
       <CheckoutModal 

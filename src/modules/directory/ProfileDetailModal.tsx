@@ -26,6 +26,7 @@ interface ProfileDetailModalProps {
   onRequestQuote: (profile: any) => void;
   onToggleFavorite: (profile: any) => void;
   isFavorited?: boolean;
+  onStartChat?: (profile: any) => void;
 }
 
 export const ProfileDetailModal: React.FC<ProfileDetailModalProps> = ({
@@ -36,6 +37,7 @@ export const ProfileDetailModal: React.FC<ProfileDetailModalProps> = ({
   onRequestQuote,
   onToggleFavorite,
   isFavorited = false,
+  onStartChat,
 }) => {
   const [reviews, setReviews] = useState<ReviewItem[]>([]);
   const [newRating, setNewRating] = useState(5);
@@ -100,19 +102,24 @@ export const ProfileDetailModal: React.FC<ProfileDetailModalProps> = ({
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={profile.name} maxWidth="640px">
+    <Modal isOpen={isOpen} onClose={onClose} title={profile.name} maxWidth="680px">
       <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
         
-        {/* Header Profile Card */}
-        <div style={{ display: 'flex', gap: '14px', alignItems: 'flex-start', background: 'var(--paper)', padding: '14px', borderRadius: '4px', border: '1px solid var(--steel-line)' }}>
+        {/* Header Profile Info */}
+        <div style={{ display: 'flex', gap: '14px', alignItems: 'flex-start' }}>
           <img 
             src={profile.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80'} 
             alt={profile.name} 
             style={{ width: '64px', height: '64px', borderRadius: '4px', objectFit: 'cover', border: '1px solid var(--steel-line)' }} 
           />
           <div style={{ flex: 1 }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <h3 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--ink)' }}>{profile.name}</h3>
+            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+              <div>
+                <h3 style={{ fontSize: '17px', fontWeight: 700, color: 'var(--ink)', lineHeight: '1.2' }}>{profile.name}</h3>
+                {profile.tradeName && profile.tradeName !== profile.name && (
+                  <div style={{ fontSize: '11px', color: 'var(--steel)' }}>Nome Fantasia: {profile.tradeName}</div>
+                )}
+              </div>
               <div style={{ display: 'flex', gap: '4px' }}>
                 <button 
                   onClick={() => onToggleFavorite(profile)}
@@ -159,13 +166,25 @@ export const ProfileDetailModal: React.FC<ProfileDetailModalProps> = ({
         </div>
 
         {/* Action CTAs */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: onStartChat ? '1fr 1fr 1fr' : '1fr 1fr', gap: '8px' }}>
+          {onStartChat && (
+            <button 
+              onClick={() => {
+                onClose();
+                onStartChat(profile);
+              }}
+              className="btn primary" 
+              style={{ justifyContent: 'center', fontSize: '11px' }}
+            >
+              <MessageSquare size={13} /> Chat Direto
+            </button>
+          )}
           <button 
             onClick={handleOpenWhatsApp}
             className="btn primary" 
             style={{ background: '#059669', borderColor: '#059669', justifyContent: 'center', fontSize: '11px' }}
           >
-            <Phone size={13} /> Chamar no WhatsApp
+            <Phone size={13} /> WhatsApp
           </button>
           <button 
             onClick={() => onRequestQuote(profile)}

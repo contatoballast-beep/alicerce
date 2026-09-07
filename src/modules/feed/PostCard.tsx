@@ -9,7 +9,7 @@ interface PostCardProps {
   currentUser: UserProfile;
   onLike: (postId: string) => void;
   onOpenProposalModal: (oppId?: string) => void;
-  onOpenChat: (authorId: string, authorName: string) => void;
+  onOpenChat: (authorId: string, authorName: string, authorRole?: string, authorAvatar?: string) => void;
 }
 
 export const PostCard: React.FC<PostCardProps> = ({
@@ -33,67 +33,68 @@ export const PostCard: React.FC<PostCardProps> = ({
       const campId = post.id.replace('ad_post_', '');
       RealApiClient.trackAdClick(campId);
     }
-    onOpenChat(post.authorId, post.authorName);
+    onOpenChat(post.authorId, post.authorName, post.authorRole, post.authorAvatar);
   };
 
-  const initials = post.authorName.split(' ').map(n => n[0]).join('').substring(0, 2);
-
   return (
-    <article className="card" style={{ marginBottom: '18px' }}>
+    <article className="card" style={{ marginBottom: '14px', position: 'relative', border: post.isSponsored ? '1.5px solid #2563EB' : undefined }}>
       
-      {/* Algorithm Relevance Bar */}
-      {post.rankingReason && (
-        <div style={{ background: 'var(--paper)', borderBottom: '1px solid var(--steel-line)', padding: '4px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '10px', color: 'var(--steel)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-            <Zap size={11} color="var(--accent)" />
-            <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 500 }}>{post.rankingReason}</span>
+      {/* Sponsored Ad or Ranking Algorithm Badge */}
+      {post.isSponsored ? (
+        <div style={{ background: '#EFF6FF', borderBottom: '1px solid #BFDBFE', padding: '6px 12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#1D4ED8', fontSize: '11px', fontWeight: 700 }}>
+            <Zap size={13} fill="#1D4ED8" />
+            <span>ALICERCE ADS • DESTAQUE PATROCINADO</span>
           </div>
-          {post.algorithmScore && post.algorithmScore < 900 && (
-            <span className="mono" style={{ fontSize: '9px', color: 'var(--accent)' }}>Score: {post.algorithmScore} pts</span>
-          )}
-        </div>
-      )}
-
-      {/* Card Head */}
-      <div className="card-head" style={{ display: 'flex', alignItems: 'center', gap: '9px', padding: '11px 13px 9px' }}>
-        <div className="avatar">{initials}</div>
-        <div className="who" style={{ flex: 1, minWidth: 0, lineHeight: 1.25 }}>
-          <div className="name" style={{ fontSize: '12.5px', fontWeight: 600, color: 'var(--ink)' }}>
-            {post.authorName}
-          </div>
-          <div className="role" style={{ fontSize: '10.5px', color: 'var(--steel)', fontFamily: 'var(--font-mono)' }}>
-            {post.authorBadge}
-          </div>
-        </div>
-
-        {post.isSponsored ? (
-          <span className="tag warn" style={{ color: 'var(--line)', borderColor: 'var(--line)', display: 'flex', alignItems: 'center', gap: '3px' }}>
-            <Sparkles size={10} /> PATROCINADO
+          <span className="mono" style={{ fontSize: '10px', color: '#2563EB', background: '#DBEAFE', padding: '1px 6px', borderRadius: '3px' }}>
+            Score: {post.algorithmScore || 100} pts
           </span>
-        ) : (
-          <span className="tag">{post.category.replace('_', ' ').toUpperCase()}</span>
-        )}
+        </div>
+      ) : post.rankingReason ? (
+        <div style={{ background: 'var(--paper)', borderBottom: '1px solid var(--steel-line)', padding: '4px 12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '10.5px' }}>
+          <span style={{ color: 'var(--steel)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+            <Cpu size={12} color="var(--line)" /> {post.rankingReason}
+          </span>
+          <span className="mono" style={{ fontSize: '10px', color: 'var(--graphite)' }}>
+            Score: {post.algorithmScore || 50} pts
+          </span>
+        </div>
+      ) : null}
+
+      {/* Author Header */}
+      <div style={{ padding: '14px 14px 0 14px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+        <img 
+          src={post.authorAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150'} 
+          alt={post.authorName} 
+          style={{ width: '40px', height: '40px', borderRadius: '50%', objectFit: 'cover', border: '1px solid var(--steel-line)' }} 
+        />
+        <div style={{ flex: 1 }}>
+          <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--ink)' }}>{post.authorName}</div>
+          <div style={{ fontSize: '11px', color: 'var(--steel)' }}>{post.authorBadge}</div>
+        </div>
+        <span className="badge verified" style={{ fontSize: '9px', textTransform: 'uppercase' }}>
+          {post.category.replace('_', ' ')}
+        </span>
       </div>
 
-      {/* Card Title & Content */}
-      <div className="card-body" style={{ padding: '0 13px 11px', fontSize: '12.5px', lineHeight: 1.5, color: 'var(--graphite)' }}>
-        <h3 style={{ fontSize: '14px', fontWeight: 700, color: 'var(--ink)', marginBottom: '4px' }}>
+      {/* Content */}
+      <div style={{ padding: '12px 14px' }}>
+        <h3 style={{ fontSize: '14px', fontWeight: 700, color: 'var(--ink)', marginBottom: '6px' }}>
           {post.title}
         </h3>
-        <p>{post.content}</p>
+        <p style={{ fontSize: '12.5px', color: 'var(--graphite)', lineHeight: '1.5' }}>
+          {post.content}
+        </p>
       </div>
 
-      {/* Card Figure (Media or Blueprint Texture) */}
-      {post.mediaUrls && post.mediaUrls.length > 0 ? (
-        <div style={{ margin: '0 13px 11px', borderRadius: '2px', overflow: 'hidden', height: '180px', position: 'relative' }}>
-          <img src={post.mediaUrls[0]} alt="Figura da Obra" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-          <div style={{ position: 'absolute', bottom: '8px', left: '8px', background: 'var(--ink)', color: '#FFF', fontFamily: 'var(--font-mono)', fontSize: '9.5px', padding: '3px 7px', textTransform: 'uppercase' }}>
-            {post.title.substring(0, 30)}
-          </div>
-        </div>
-      ) : (
-        <div className="card-figure" style={{ margin: '0 13px 11px', height: '100px', border: '1px dashed var(--steel-line)', background: 'repeating-linear-gradient(45deg, var(--paper) 0 8px, var(--paper-deep) 8px 9px)', display: 'flex', alignItems: 'flex-end', padding: '6px' }}>
-          <span className="cap">{post.title}</span>
+      {/* Media / Photo */}
+      {post.mediaUrls && post.mediaUrls.length > 0 && (
+        <div style={{ borderTop: '1px solid var(--steel-line)', borderBottom: '1px solid var(--steel-line)', maxHeight: '380px', overflow: 'hidden' }}>
+          <img 
+            src={post.mediaUrls[0]} 
+            alt={post.title} 
+            style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} 
+          />
         </div>
       )}
 
@@ -145,8 +146,12 @@ export const PostCard: React.FC<PostCardProps> = ({
             </button>
           )}
 
-          <button onClick={() => onOpenChat(post.authorId, post.authorName)} className="btn ghost" style={{ padding: '4px 8px', fontSize: '9.5px' }}>
-            Msgs
+          <button 
+            onClick={() => onOpenChat(post.authorId, post.authorName, post.authorRole, post.authorAvatar)} 
+            className="btn ghost" 
+            style={{ padding: '4px 8px', fontSize: '9.5px', gap: '4px' }}
+          >
+            <MessageSquare size={11} /> Conversar
           </button>
         </div>
       </div>
