@@ -359,7 +359,7 @@ wss.on('connection', (ws: WebSocket) => {
   });
 });
 
-server.listen(PORT, () => {
+server.listen(Number(PORT), '0.0.0.0', () => {
   console.log(`\n==================================================`);
   console.log(`🚀 ALICERCE Backend Rodando na Porta ${PORT}`);
   console.log(`🌐 Turso DB / libSQL Conectado com Sucesso`);

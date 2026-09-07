@@ -1,14 +1,14 @@
 services:
   - type: web
     name: alicerce-backend
-    env: node
-    region: oregon
+    runtime: node
+    rootDir: server
     plan: free
-    buildCommand: cd server && npm install && npm run build
-    startCommand: cd server && npm start
+    buildCommand: npm install && npm run build
+    startCommand: npm start
     envVars:
-      - key: PORT
-        value: "4000"
+      - key: NODE_VERSION
+        value: 20
       - key: TURSO_DATABASE_URL
         sync: false
       - key: TURSO_AUTH_TOKEN
