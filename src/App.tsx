@@ -92,9 +92,17 @@ export const App: React.FC = () => {
   // Sync Backend on Startup
   useEffect(() => {
     try {
-      const stored = localStorage.getItem('alicerce_posts');
-      if (stored && (stored.includes('post_1') || stored.includes('Concretagem de Laje Protendida') || stored.includes('Horizon'))) {
+      const storedPosts = localStorage.getItem('alicerce_posts');
+      if (storedPosts && (storedPosts.includes('post_1') || storedPosts.includes('Concretagem de Laje Protendida') || storedPosts.includes('Horizon'))) {
         localStorage.removeItem('alicerce_posts');
+      }
+      const storedOpps = localStorage.getItem('alicerce_opportunities');
+      if (storedOpps && (storedOpps.includes('opp_1') || storedOpps.includes('opp_2') || storedOpps.includes('ViaSul') || storedOpps.includes('União'))) {
+        localStorage.removeItem('alicerce_opportunities');
+      }
+      const storedProjs = localStorage.getItem('alicerce_projects');
+      if (storedProjs && (storedProjs.includes('proj_1') || storedProjs.includes('Jardins das Orquídeas') || storedProjs.includes('Orquídeas'))) {
+        localStorage.removeItem('alicerce_projects');
       }
     } catch (e) {}
 
@@ -112,12 +120,15 @@ export const App: React.FC = () => {
         ]);
         const cleanPosts = (fetchedPosts || []).filter(p => !['post_1', 'post_2', 'post_3'].includes(p.id));
         setPosts(cleanPosts);
-        if (fetchedOpps?.length) setOpportunities(fetchedOpps);
-        if (fetchedCamps?.length) setCampaigns(fetchedCamps);
+        const cleanOpps = (fetchedOpps || []).filter(o => !['opp_1', 'opp_2'].includes(o.id) && !o.title?.includes('ViaSul') && !o.title?.includes('União'));
+        setOpportunities(cleanOpps);
+        if (fetchedCamps) setCampaigns(fetchedCamps);
         if (fetchedFavs?.length) {
           setFavoriteIds(new Set(fetchedFavs.map(f => f.target_id)));
         }
       }
+      // Sync local projects
+      setProjects(LocalApiService.getProjects());
     };
 
     syncBackendData();

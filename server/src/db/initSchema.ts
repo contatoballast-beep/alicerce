@@ -528,46 +528,9 @@ export async function initSchema() {
       // 6. Posts (Purge legacy mock posts)
       await db.execute("DELETE FROM posts WHERE id IN ('post_1', 'post_2', 'post_3')");
 
-      // 7. Opportunity
-      await db.execute({
-        sql: `INSERT INTO opportunities (id, owner_id, owner_name, owner_avatar, title, description, category, specialty, city, state, budget_min, budget_max, deadline_days, status, proposals_count, created_at)
-              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 45, 'aberta', 2, ?)`,
-        args: [
-          'opp_1',
-          'usr_camila',
-          'Arqª. Camila Torres',
-          'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80',
-          'Projeto Estrutural e Cálculo de Fundações para Galpão Logístico (4.000m²)',
-          'Necessitamos de engenheiro calculista para elaborar projeto executivo estrutural em pré-moldado de concreto para galpão na Rodovia Dutra.',
-          'Projeto Estrutural',
-          'Estruturas de Concreto / Metal',
-          'Guarulhos',
-          'SP',
-          45000,
-          75000,
-          'Há 3 dias'
-        ]
-      });
-
-      // 8. Proposal
-      await db.execute({
-        sql: `INSERT INTO proposals (id, opportunity_id, proposer_id, proposer_name, proposer_role, proposer_avatar, crea_cau, value, deadline_days, scope_description, attachment_url, status, created_at)
-              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'em_negociacao', ?)`,
-        args: [
-          'prop_1',
-          'opp_1',
-          'usr_curr',
-          'Eng. Roberto Silva',
-          'profissional_crea',
-          'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=150&auto=format&fit=crop&q=80',
-          'CREA-SP 5069824/D',
-          58000,
-          30,
-          'Elaboração de modelo tridimensional em software BIM/TQS, detalhamento completo de armaduras, blocos e sapatas de fundação com emissão de ART registrada.',
-          'Proposta_Tecnica_Roberto_Silva.pdf',
-          'Ontem'
-        ]
-      });
+      // 7. Opportunities & Proposals (Purge legacy mock entries)
+      await db.execute("DELETE FROM opportunities WHERE id IN ('opp_1', 'opp_2')");
+      await db.execute("DELETE FROM proposals WHERE id IN ('prop_1', 'prop_101', 'prop_102')");
 
       // 9. Categories
       const categoriesSeed = [

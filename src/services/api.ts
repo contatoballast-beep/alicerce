@@ -121,7 +121,12 @@ export const LocalApiService = {
 
   // Opportunities & Proposals
   getOpportunities(): Opportunity[] {
-    return getStored<Opportunity[]>(STORAGE_KEYS.OPPORTUNITIES, MOCK_OPPORTUNITIES);
+    const raw = getStored<Opportunity[]>(STORAGE_KEYS.OPPORTUNITIES, []);
+    const clean = raw.filter(o => !['opp_1', 'opp_2'].includes(o.id));
+    if (clean.length !== raw.length) {
+      setStored(STORAGE_KEYS.OPPORTUNITIES, clean);
+    }
+    return clean;
   },
 
   addOpportunity(oppData: Omit<Opportunity, 'id' | 'createdAt' | 'proposalsCount' | 'proposals' | 'status'>): Opportunity {
@@ -169,7 +174,28 @@ export const LocalApiService = {
 
   // Construction Projects
   getProjects(): ConstructionProject[] {
-    return getStored<ConstructionProject[]>(STORAGE_KEYS.PROJECTS, MOCK_PROJECTS);
+    const raw = getStored<ConstructionProject[]>(STORAGE_KEYS.PROJECTS, []);
+    const clean = raw.filter(p => !['proj_1'].includes(p.id));
+    if (clean.length !== raw.length) {
+      setStored(STORAGE_KEYS.PROJECTS, clean);
+    }
+    return clean;
+  },
+
+  addProject(projectData: Omit<ConstructionProject, 'id' | 'milestones'>): ConstructionProject {
+    const projects = this.getProjects();
+    const newProj: ConstructionProject = {
+      ...projectData,
+      id: `proj_${Date.now()}`,
+      milestones: [],
+    };
+    const updated = [newProj, ...projects];
+    setStored(STORAGE_KEYS.PROJECTS, updated);
+    return newProj;
+  },
+
+  updateProjects(projects: ConstructionProject[]): void {
+    setStored(STORAGE_KEYS.PROJECTS, projects);
   },
 
   // Ads Campaigns

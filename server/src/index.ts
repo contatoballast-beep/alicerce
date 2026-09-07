@@ -586,7 +586,7 @@ app.post('/api/quotes/:id/respond', async (req, res) => {
 app.get('/api/opportunities', async (req, res) => {
   try {
     const { q, category, city, status } = req.query;
-    let sql = `SELECT * FROM opportunities WHERE 1=1`;
+    let sql = `SELECT * FROM opportunities WHERE id NOT IN ('opp_1', 'opp_2')`;
     const args: any[] = [];
 
     if (q) {
