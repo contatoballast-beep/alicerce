@@ -43,8 +43,10 @@
   --bg-dark: #0F172A;
   --bg-card: #FFFFFF;
   --bg-input: #FFFFFF;
+  --bg-subtle: #F1F5F9;
   --border-color: #E2E8F0;
   --text-main: #0F172A;
+  --text-body: #334155;
   --text-muted: #64748B;
   --text-heading: #0F172A;
 
@@ -56,9 +58,9 @@
   /* Radii */
   --radius-xs: 4px;
   --radius-sm: 6px;
-  --radius-md: 9px;
-  --radius-lg: 14px;
-  --radius-xl: 18px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
   --radius-full: 9999px;
 
   /* Elevation Shadows */
@@ -67,7 +69,7 @@
   --shadow-md: 0 4px 6px -1px rgba(15, 23, 42, 0.07), 0 2px 4px -2px rgba(15, 23, 42, 0.04);
   --shadow-lg: 0 10px 15px -3px rgba(15, 23, 42, 0.08), 0 4px 6px -4px rgba(15, 23, 42, 0.03);
   --shadow-xl: 0 20px 25px -5px rgba(15, 23, 42, 0.08), 0 8px 10px -6px rgba(15, 23, 42, 0.03);
-  --shadow-card: 0 2px 8px -2px rgba(15, 23, 42, 0.05), 0 1px 3px 0 rgba(15, 23, 42, 0.04);
+  --shadow-card: 0 1px 3px 0 rgba(15, 23, 42, 0.06), 0 1px 2px 0 rgba(15, 23, 42, 0.04);
   --shadow-glow-blue: 0 0 20px rgba(37, 99, 235, 0.2);
 }
 
@@ -125,7 +127,7 @@ p {
 .wordmark {
   font-family: var(--font-display);
   font-weight: 800;
-  font-size: 19px;
+  font-size: 18px;
   color: var(--ink);
   display: inline-flex;
   align-items: center;
@@ -143,13 +145,98 @@ p {
   flex-shrink: 0;
 }
 
-/* Modern 2026 Buttons */
+/* ==========================================================================
+   GLOBAL FORM ELEMENTS & INPUTS
+   ========================================================================== */
+input, select, textarea {
+  width: 100%;
+  display: block;
+  font-family: var(--font-body);
+  font-size: 13.5px;
+  color: #0F172A;
+  background: #FFFFFF;
+  border: 1.5px solid #CBD5E1;
+  border-radius: var(--radius-md);
+  padding: 10px 14px;
+  transition: all 0.15s ease;
+  outline: none;
+}
+
+input:focus, select:focus, textarea:focus {
+  border-color: #2563EB;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
+input::placeholder, textarea::placeholder {
+  color: #94A3B8;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+  margin-bottom: 12px;
+}
+
+.field label, label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: #475569;
+  letter-spacing: -0.01em;
+  margin-bottom: 2px;
+}
+
+.form-wrap {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+/* Segmented Control Row & Pills */
+.segrow {
+  display: flex;
+  background: #F1F5F9;
+  padding: 4px;
+  border-radius: 10px;
+  gap: 4px;
+  border: 1px solid #E2E8F0;
+  width: 100%;
+  margin-bottom: 16px;
+}
+
+.seg {
+  flex: 1;
+  text-align: center;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: 7px;
+  cursor: pointer;
+  color: #64748B;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.seg:hover {
+  color: #0F172A;
+}
+
+.seg.on, .seg.active {
+  background: #FFFFFF;
+  color: #0F172A;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  font-weight: 700;
+}
+
+/* Modern Buttons */
 .btn {
   font-family: var(--font-body);
-  font-size: 12.5px;
+  font-size: 13px;
   font-weight: 600;
   letter-spacing: -0.01em;
-  padding: 8px 16px;
+  padding: 9px 16px;
   border-radius: var(--radius-md);
   cursor: pointer;
   display: inline-flex;
@@ -158,7 +245,7 @@ p {
   gap: 7px;
   border: 1px solid transparent;
   text-decoration: none;
-  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
   outline: none;
   white-space: nowrap;
 }
@@ -168,43 +255,42 @@ p {
 }
 
 .btn.primary, .btn-primary {
-  background: #0F172A;
+  background: #2563EB;
   color: #FFFFFF;
-  border-color: #0F172A;
-  box-shadow: var(--shadow-sm);
+  border-color: #2563EB;
+  box-shadow: 0 1px 2px rgba(37, 99, 235, 0.2);
 }
 .btn.primary:hover, .btn-primary:hover {
-  background: #1E293B;
-  border-color: #1E293B;
-  box-shadow: var(--shadow-md);
+  background: #1D4ED8;
+  border-color: #1D4ED8;
+  box-shadow: 0 4px 10px rgba(37, 99, 235, 0.3);
 }
 
 .btn.accent, .btn-accent {
-  background: var(--color-primary);
+  background: var(--color-accent);
   color: #FFFFFF;
-  border-color: var(--color-primary);
-  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25);
+  border-color: var(--color-accent);
+  box-shadow: 0 1px 2px rgba(234, 88, 12, 0.2);
 }
 .btn.accent:hover, .btn-accent:hover {
-  background: var(--color-primary-hover);
-  border-color: var(--color-primary-hover);
-  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.35);
+  background: var(--color-accent-hover);
+  border-color: var(--color-accent-hover);
 }
 
 .btn.ghost, .btn-outline {
   background: #FFFFFF;
-  color: var(--graphite);
-  border: 1px solid var(--steel-line);
+  color: #475569;
+  border: 1px solid #E2E8F0;
 }
 .btn.ghost:hover, .btn-outline:hover {
   background: #F8FAFC;
-  color: var(--ink);
+  color: #0F172A;
   border-color: #CBD5E1;
 }
 
 .btn.danger {
-  background: #FEE2E2;
-  color: #B91C1C;
+  background: #FEF2F2;
+  color: #DC2626;
   border-color: #FECACA;
 }
 .btn.danger:hover {
@@ -326,25 +412,22 @@ p {
   color: var(--ink);
 }
 
-/* Form Inputs */
+/* Form Inputs Alternate Classes */
 .input-field, .input-select, .input-textarea {
   width: 100%;
   font-family: var(--font-body);
-  font-size: 13px;
+  font-size: 13.5px;
   color: var(--ink);
   background: #FFFFFF;
   border: 1.5px solid var(--steel-line);
   border-radius: var(--radius-md);
-  padding: 9px 12px;
+  padding: 10px 14px;
   transition: all 0.15s ease;
   outline: none;
 }
 .input-field:focus, .input-select:focus, .input-textarea:focus {
   border-color: var(--color-primary);
   box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
-}
-.input-field::placeholder, .input-textarea::placeholder {
-  color: #94A3B8;
 }
 
 /* Pulse Dot Online */
