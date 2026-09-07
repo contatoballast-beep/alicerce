@@ -23,21 +23,22 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Initialize Turso DB Schema
+// Initialize Database Schema
 await initSchema();
 
 // Health Check API
 app.get('/api/health', (req, res) => {
   res.json({
+    ok: true,
     status: 'online',
     service: 'ALICERCE Backend API',
     database: 'Turso DB (@libsql/client)',
-    version: '1.0.0',
+    version: '2.0.0',
     timestamp: new Date().toISOString()
   });
 });
 
-// Middleware: Authenticate JWT
+// Middleware: Authenticate JWT (optional or required)
 function authenticateToken(req: any, res: any, next: any) {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
@@ -50,26 +51,113 @@ function authenticateToken(req: any, res: any, next: any) {
   });
 }
 
-/* ==========================================
-   1. AUTHENTICATION ROUTES (Multi-Perfil)
-   ========================================== */
+function optionalToken(req: any, res: any, next: any) {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+  if (token) {
+    jwt.verify(token, JWT_SECRET, (err: any, user: any) => {
+      if (!err) req.user = user;
+      next();
+    });
+  } else {
+    next();
+  }
+}
+
+/* ==========================================================================
+   1. AUTHENTICATION & ONBOARDING
+   ========================================================================== */
 app.post('/api/auth/register', async (req, res) => {
   try {
-    const { name, email, password, role, creaCauNumber, cnpjNumber, city, state } = req.body;
+    const { name, email, password, role, creaCauNumber, cnpjNumber, phone, whatsapp, city, state } = req.body;
     if (!email || !password || !name) {
-      return res.status(400).json({ error: 'Preencha os campos obrigatórios' });
+      return res.status(400).json({ error: 'Nome, e-mail e senha são obrigatórios' });
+    }
+
+    // Check if user already exists
+    const existing = await db.execute({
+      sql: "SELECT id FROM users WHERE email = ?",
+      args: [email]
+    });
+    if (existing.rows.length > 0) {
+      return res.status(400).json({ error: 'E-mail já cadastrado na plataforma' });
     }
 
     const passHash = await bcrypt.hash(password, 10);
     const userId = `usr_${Date.now()}`;
+    const userRole = role || 'cliente';
+    const now = new Date().toISOString();
+
+    const avatar = `https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80`;
 
     await db.execute({
-      sql: `INSERT INTO users (id, name, email, password_hash, role, crea_cau_number, cnpj_number, verified, city, state, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?)`,
-      args: [userId, name, email, passHash, role || 'profissional_crea', creaCauNumber || null, cnpjNumber || null, city || 'São Paulo', state || 'SP', new Date().toISOString()]
+      sql: `INSERT INTO users (id, name, email, password_hash, role, crea_cau_number, cnpj_number, phone, whatsapp, city, state, avatar, is_verified, verification_status, consent_lgpd, plan, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 'unverified', 1, 'gratuito', ?)`,
+      args: [
+        userId,
+        name,
+        email,
+        passHash,
+        userRole,
+        creaCauNumber || null,
+        cnpjNumber || null,
+        phone || null,
+        whatsapp || phone || null,
+        city || 'São Paulo',
+        state || 'SP',
+        avatar,
+        now
+      ]
     });
 
-    const token = jwt.sign({ id: userId, email, role: role || 'profissional_crea' }, JWT_SECRET, { expiresIn: '7d' });
+    // Create sub-profile based on role
+    if (userRole === 'profissional' || userRole === 'profissional_crea' || userRole === 'profissional_cau') {
+      await db.execute({
+        sql: `INSERT INTO professional_profiles (id, user_id, profession, specialty, experience_years, services, city, state, created_at)
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        args: [
+          `prof_${Date.now()}`,
+          userId,
+          userRole === 'profissional_cau' ? 'Arquiteto' : 'Engenheiro Civil',
+          'Construção Civil & Projetos',
+          3,
+          JSON.stringify(['Projetos', 'Laudos']),
+          city || 'São Paulo',
+          state || 'SP',
+          now
+        ]
+      });
+    } else if (userRole === 'empresa' || userRole === 'empresa_cnpj') {
+      await db.execute({
+        sql: `INSERT INTO company_profiles (id, user_id, company_name, cnpj, city, state, created_at)
+              VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        args: [
+          `comp_${Date.now()}`,
+          userId,
+          name,
+          cnpjNumber || '00.000.000/0001-00',
+          city || 'São Paulo',
+          state || 'SP',
+          now
+        ]
+      });
+    } else if (userRole === 'fornecedor') {
+      await db.execute({
+        sql: `INSERT INTO supplier_profiles (id, user_id, company_name, cnpj, category, city, state, created_at)
+              VALUES (?, ?, ?, ?, 'Materiais de Construção', ?, ?, ?)`,
+        args: [
+          `supp_${Date.now()}`,
+          userId,
+          name,
+          cnpjNumber || '00.000.000/0001-00',
+          city || 'São Paulo',
+          state || 'SP',
+          now
+        ]
+      });
+    }
+
+    const token = jwt.sign({ id: userId, email, role: userRole }, JWT_SECRET, { expiresIn: '30d' });
 
     res.status(201).json({
       token,
@@ -77,12 +165,17 @@ app.post('/api/auth/register', async (req, res) => {
         id: userId,
         name,
         email,
-        role: role || 'profissional_crea',
+        role: userRole,
         creaCauNumber,
         cnpjNumber,
-        verified: true,
+        phone,
+        whatsapp,
         city: city || 'São Paulo',
-        state: state || 'SP'
+        state: state || 'SP',
+        avatar,
+        verified: false,
+        consentLgpd: true,
+        createdAt: now
       }
     });
   } catch (err: any) {
@@ -93,6 +186,8 @@ app.post('/api/auth/register', async (req, res) => {
 app.post('/api/auth/login', async (req, res) => {
   try {
     const { email, password } = req.body;
+    if (!email || !password) return res.status(400).json({ error: 'E-mail e senha são obrigatórios' });
+
     const result = await db.execute({
       sql: "SELECT * FROM users WHERE email = ?",
       args: [email]
@@ -108,16 +203,526 @@ app.post('/api/auth/login', async (req, res) => {
       return res.status(400).json({ error: 'Credenciais inválidas' });
     }
 
-    const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, JWT_SECRET, { expiresIn: '7d' });
-    res.json({ token, user });
+    const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, JWT_SECRET, { expiresIn: '30d' });
+
+    res.json({
+      token,
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        creaCauNumber: user.crea_cau_number,
+        cnpjNumber: user.cnpj_number,
+        phone: user.phone,
+        whatsapp: user.whatsapp,
+        city: user.city,
+        state: user.state,
+        bio: user.bio,
+        avatar: user.avatar,
+        verified: Boolean(user.is_verified),
+        plan: user.plan,
+        createdAt: user.created_at
+      }
+    });
   } catch (err: any) {
     res.status(500).json({ error: 'Erro ao fazer login' });
   }
 });
 
-/* ==========================================
-   2. FEED & POSTS ROUTES (Carimbo Técnico)
-   ========================================== */
+app.get('/api/auth/me', authenticateToken, async (req: any, res) => {
+  try {
+    const result = await db.execute({
+      sql: "SELECT * FROM users WHERE id = ?",
+      args: [req.user.id]
+    });
+    if (result.rows.length === 0) return res.status(404).json({ error: 'Usuário não encontrado' });
+    const user: any = result.rows[0];
+    res.json({
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      creaCauNumber: user.crea_cau_number,
+      cnpjNumber: user.cnpj_number,
+      phone: user.phone,
+      whatsapp: user.whatsapp,
+      city: user.city,
+      state: user.state,
+      bio: user.bio,
+      avatar: user.avatar,
+      verified: Boolean(user.is_verified),
+      plan: user.plan,
+      createdAt: user.created_at
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: 'Erro ao carregar perfil' });
+  }
+});
+
+app.put('/api/user/profile', authenticateToken, async (req: any, res) => {
+  try {
+    const { name, phone, whatsapp, city, state, bio, avatar, creaCauNumber, cnpjNumber } = req.body;
+    await db.execute({
+      sql: `UPDATE users SET name = COALESCE(?, name), phone = COALESCE(?, phone), whatsapp = COALESCE(?, whatsapp),
+            city = COALESCE(?, city), state = COALESCE(?, state), bio = COALESCE(?, bio), avatar = COALESCE(?, avatar),
+            crea_cau_number = COALESCE(?, crea_cau_number), cnpj_number = COALESCE(?, cnpj_number), updated_at = ?
+            WHERE id = ?`,
+      args: [name, phone, whatsapp, city, state, bio, avatar, creaCauNumber, cnpjNumber, new Date().toISOString(), req.user.id]
+    });
+    res.json({ success: true, message: 'Perfil atualizado com sucesso' });
+  } catch (err: any) {
+    res.status(500).json({ error: 'Erro ao atualizar perfil' });
+  }
+});
+
+/* ==========================================================================
+   2. PROFESSIONALS & COMPANIES DIRECTORY (Search & Profiles)
+   ========================================================================== */
+app.get('/api/professionals', async (req, res) => {
+  try {
+    const { q, city, state, specialty, category } = req.query;
+    let sql = `
+      SELECT u.id, u.name, u.email, u.role, u.avatar, u.city, u.state, u.is_verified, u.phone, u.whatsapp, u.bio,
+             p.profession, p.specialty, p.experience_years, p.services, p.rating, p.reviews_count, p.availability, p.crea_cau_number
+      FROM users u
+      LEFT JOIN professional_profiles p ON u.id = p.user_id
+      WHERE u.role IN ('profissional', 'profissional_crea', 'profissional_cau', 'arquiteto', 'engenheiro')
+    `;
+    const args: any[] = [];
+
+    if (q) {
+      sql += ` AND (u.name LIKE ? OR p.profession LIKE ? OR p.specialty LIKE ? OR p.services LIKE ?)`;
+      const queryParam = `%${q}%`;
+      args.push(queryParam, queryParam, queryParam, queryParam);
+    }
+    if (city) {
+      sql += ` AND (u.city LIKE ? OR p.city LIKE ?)`;
+      args.push(`%${city}%`, `%${city}%`);
+    }
+    if (state) {
+      sql += ` AND (u.state = ? OR p.state = ?)`;
+      args.push(state, state);
+    }
+
+    sql += ` ORDER BY p.rating DESC, p.reviews_count DESC`;
+    const result = await db.execute({ sql, args });
+
+    const professionals = result.rows.map((r: any) => ({
+      id: r.id,
+      name: r.name,
+      email: r.email,
+      role: r.role,
+      avatar: r.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+      city: r.city,
+      state: r.state,
+      phone: r.phone,
+      whatsapp: r.whatsapp || r.phone,
+      bio: r.bio,
+      profession: r.profession || 'Especialista da Construção',
+      specialty: r.specialty || 'Serviços Técnicos',
+      experienceYears: r.experience_years || 5,
+      services: r.services ? JSON.parse(r.services) : ['Consultoria', 'Execução'],
+      creaCauNumber: r.crea_cau_number,
+      rating: r.rating || 5.0,
+      reviewsCount: r.reviews_count || 0,
+      availability: r.availability || 'disponivel',
+      isVerified: Boolean(r.is_verified)
+    }));
+
+    res.json(professionals);
+  } catch (err: any) {
+    res.status(500).json({ error: 'Erro ao listar profissionais' });
+  }
+});
+
+app.get('/api/companies', async (req, res) => {
+  try {
+    const { q, city } = req.query;
+    let sql = `
+      SELECT u.id, u.name, u.email, u.avatar, u.city, u.state, u.is_verified, u.phone, u.whatsapp, u.bio,
+             c.company_name, c.trade_name, c.cnpj, c.categories, c.services, c.region_served, c.rating, c.reviews_count, c.website
+      FROM users u
+      LEFT JOIN company_profiles c ON u.id = c.user_id
+      WHERE u.role IN ('empresa', 'empresa_cnpj', 'construtora')
+    `;
+    const args: any[] = [];
+
+    if (q) {
+      sql += ` AND (u.name LIKE ? OR c.company_name LIKE ? OR c.services LIKE ?)`;
+      args.push(`%${q}%`, `%${q}%`, `%${q}%`);
+    }
+    if (city) {
+      sql += ` AND u.city LIKE ?`;
+      args.push(`%${city}%`);
+    }
+
+    const result = await db.execute({ sql, args });
+    const companies = result.rows.map((r: any) => ({
+      id: r.id,
+      name: r.company_name || r.name,
+      tradeName: r.trade_name,
+      cnpj: r.cnpj,
+      city: r.city,
+      state: r.state,
+      phone: r.phone,
+      whatsapp: r.whatsapp || r.phone,
+      website: r.website,
+      avatar: r.avatar,
+      categories: r.categories ? JSON.parse(r.categories) : ['Construção'],
+      services: r.services ? JSON.parse(r.services) : ['Obras'],
+      rating: r.rating || 5.0,
+      reviewsCount: r.reviews_count || 0,
+      isVerified: Boolean(r.is_verified)
+    }));
+
+    res.json(companies);
+  } catch (err: any) {
+    res.status(500).json({ error: 'Erro ao listar empresas' });
+  }
+});
+
+/* ==========================================================================
+   3. SUPPLIERS & MATERIAL QUOTE ENGINE (Cotações de Materiais)
+   ========================================================================== */
+app.get('/api/suppliers', async (req, res) => {
+  try {
+    const { q, category, city } = req.query;
+    let sql = `
+      SELECT u.id, u.name, u.email, u.avatar, u.city, u.state, u.phone, u.whatsapp,
+             s.company_name, s.cnpj, s.category, s.product_types, s.delivery_available, s.rating, s.reviews_count, s.region_served, s.website
+      FROM users u
+      LEFT JOIN supplier_profiles s ON u.id = s.user_id
+      WHERE u.role = 'fornecedor'
+    `;
+    const args: any[] = [];
+
+    if (q) {
+      sql += ` AND (u.name LIKE ? OR s.company_name LIKE ? OR s.product_types LIKE ?)`;
+      args.push(`%${q}%`, `%${q}%`, `%${q}%`);
+    }
+    if (category) {
+      sql += ` AND s.category LIKE ?`;
+      args.push(`%${category}%`);
+    }
+    if (city) {
+      sql += ` AND u.city LIKE ?`;
+      args.push(`%${city}%`);
+    }
+
+    const result = await db.execute({ sql, args });
+    const suppliers = result.rows.map((r: any) => ({
+      id: r.id,
+      name: r.company_name || r.name,
+      cnpj: r.cnpj,
+      category: r.category || 'Materiais Básicos',
+      productTypes: r.product_types ? JSON.parse(r.product_types) : ['Cimento', 'Areia', 'Blocos'],
+      deliveryAvailable: Boolean(r.delivery_available),
+      city: r.city,
+      state: r.state,
+      phone: r.phone,
+      whatsapp: r.whatsapp || r.phone,
+      website: r.website,
+      avatar: r.avatar,
+      rating: r.rating || 5.0,
+      reviewsCount: r.reviews_count || 0
+    }));
+
+    res.json(suppliers);
+  } catch (err: any) {
+    res.status(500).json({ error: 'Erro ao listar fornecedores' });
+  }
+});
+
+// Create Material Quote Request
+app.post('/api/quotes', async (req, res) => {
+  try {
+    const { requesterId, requesterName, requesterPhone, requesterWhatsapp, supplierId, supplierName, deliveryAddress, city, state, notes, items } = req.body;
+    const quoteId = `quote_${Date.now()}`;
+    const now = new Date().toISOString();
+
+    await db.execute({
+      sql: `INSERT INTO quote_requests (id, requester_id, requester_name, requester_phone, requester_whatsapp, supplier_id, supplier_name, delivery_address, city, state, status, notes, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'aberta', ?, ?)`,
+      args: [
+        quoteId,
+        requesterId || 'usr_curr',
+        requesterName || 'Cliente ALICERCE',
+        requesterPhone || '(11) 98765-4321',
+        requesterWhatsapp || '(11) 98765-4321',
+        supplierId || null,
+        supplierName || 'Fornecedores Gerais',
+        deliveryAddress || 'Rua da Obra, 100',
+        city || 'São Paulo',
+        state || 'SP',
+        notes || '',
+        now
+      ]
+    });
+
+    if (Array.isArray(items)) {
+      for (const it of items) {
+        await db.execute({
+          sql: `INSERT INTO quote_request_items (id, quote_request_id, product_name, quantity, unit, notes)
+                VALUES (?, ?, ?, ?, ?, ?)`,
+          args: [`item_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`, quoteId, it.productName, it.quantity, it.unit || 'un', it.notes || '']
+        });
+      }
+    }
+
+    res.status(201).json({ id: quoteId, status: 'aberta', message: 'Cotação de materiais enviada com sucesso!' });
+  } catch (err: any) {
+    res.status(500).json({ error: 'Erro ao criar solicitação de cotação' });
+  }
+});
+
+// List Quote Requests
+app.get('/api/quotes', async (req, res) => {
+  try {
+    const { userId, supplierId } = req.query;
+    let sql = `SELECT * FROM quote_requests`;
+    const args: any[] = [];
+
+    if (userId) {
+      sql += ` WHERE requester_id = ?`;
+      args.push(userId);
+    } else if (supplierId) {
+      sql += ` WHERE supplier_id = ? OR supplier_id IS NULL`;
+      args.push(supplierId);
+    }
+
+    sql += ` ORDER BY id DESC`;
+    const quotesResult = await db.execute({ sql, args });
+    const itemsResult = await db.execute("SELECT * FROM quote_request_items");
+    const responsesResult = await db.execute("SELECT * FROM quote_responses");
+
+    const quotes = quotesResult.rows.map((q: any) => ({
+      id: q.id,
+      requesterId: q.requester_id,
+      requesterName: q.requester_name,
+      requesterPhone: q.requester_phone,
+      requesterWhatsapp: q.requester_whatsapp,
+      supplierId: q.supplier_id,
+      supplierName: q.supplier_name,
+      deliveryAddress: q.delivery_address,
+      city: q.city,
+      state: q.state,
+      status: q.status,
+      notes: q.notes,
+      createdAt: q.created_at,
+      items: itemsResult.rows
+        .filter((it: any) => it.quote_request_id === q.id)
+        .map((it: any) => ({
+          id: it.id,
+          productName: it.product_name,
+          quantity: it.quantity,
+          unit: it.unit,
+          notes: it.notes
+        })),
+      responses: responsesResult.rows
+        .filter((r: any) => r.quote_request_id === q.id)
+        .map((r: any) => ({
+          id: r.id,
+          supplierId: r.supplier_id,
+          supplierName: r.supplier_name,
+          unitPrice: r.unit_price,
+          totalPrice: r.total_price,
+          shippingPrice: r.shipping_price,
+          totalSum: r.total_sum,
+          deliveryDays: r.delivery_days,
+          validityDays: r.validity_days,
+          notes: r.notes,
+          createdAt: r.created_at
+        }))
+    }));
+
+    res.json(quotes);
+  } catch (err: any) {
+    res.status(500).json({ error: 'Erro ao buscar cotações' });
+  }
+});
+
+// Supplier responds to Quote
+app.post('/api/quotes/:id/respond', async (req, res) => {
+  try {
+    const quoteId = req.params.id;
+    const { supplierId, supplierName, unitPrice, totalPrice, shippingPrice, totalSum, deliveryDays, validityDays, notes } = req.body;
+    const responseId = `resp_${Date.now()}`;
+    const now = new Date().toISOString();
+
+    await db.execute({
+      sql: `INSERT INTO quote_responses (id, quote_request_id, supplier_id, supplier_name, unit_price, total_price, shipping_price, total_sum, delivery_days, validity_days, notes, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      args: [
+        responseId,
+        quoteId,
+        supplierId || 'usr_fornecedor',
+        supplierName || 'Polimix Concreto',
+        unitPrice,
+        totalPrice,
+        shippingPrice || 0,
+        totalSum,
+        deliveryDays || 3,
+        validityDays || 7,
+        notes || '',
+        now
+      ]
+    });
+
+    await db.execute({
+      sql: "UPDATE quote_requests SET status = 'respondida', total_quoted = ? WHERE id = ?",
+      args: [totalSum, quoteId]
+    });
+
+    res.status(201).json({ id: responseId, quoteId, status: 'respondida', totalSum });
+  } catch (err: any) {
+    res.status(500).json({ error: 'Erro ao responder cotação' });
+  }
+});
+
+/* ==========================================================================
+   4. OPPORTUNITIES & PROPOSALS
+   ========================================================================== */
+app.get('/api/opportunities', async (req, res) => {
+  try {
+    const { q, category, city, status } = req.query;
+    let sql = `SELECT * FROM opportunities WHERE 1=1`;
+    const args: any[] = [];
+
+    if (q) {
+      sql += ` AND (title LIKE ? OR description LIKE ? OR specialty LIKE ?)`;
+      args.push(`%${q}%`, `%${q}%`, `%${q}%`);
+    }
+    if (city) {
+      sql += ` AND city LIKE ?`;
+      args.push(`%${city}%`);
+    }
+    if (category) {
+      sql += ` AND category LIKE ?`;
+      args.push(`%${category}%`);
+    }
+    if (status) {
+      sql += ` AND status = ?`;
+      args.push(status);
+    }
+
+    sql += ` ORDER BY id DESC`;
+    const oppsResult = await db.execute({ sql, args });
+    const propsResult = await db.execute("SELECT * FROM proposals");
+
+    const opportunities = oppsResult.rows.map((row: any) => {
+      const oppProposals = propsResult.rows
+        .filter((p: any) => p.opportunity_id === row.id)
+        .map((p: any) => ({
+          id: p.id,
+          opportunityId: p.opportunity_id,
+          proposerId: p.proposer_id,
+          proposerName: p.proposer_name,
+          proposerRole: p.proposer_role,
+          proposerAvatar: p.proposer_avatar,
+          creaCau: p.crea_cau,
+          value: p.value,
+          deadlineDays: p.deadline_days,
+          scopeDescription: p.scope_description,
+          attachmentUrl: p.attachment_url,
+          status: p.status,
+          createdAt: p.created_at
+        }));
+
+      return {
+        id: row.id,
+        title: row.title,
+        description: row.description,
+        category: row.category,
+        specialty: row.specialty,
+        location: { city: row.city, state: row.state },
+        budgetRange: { min: row.budget_min, max: row.budget_max },
+        ownerId: row.owner_id,
+        ownerName: row.owner_name,
+        ownerAvatar: row.owner_avatar,
+        status: row.status,
+        deadlineDays: row.deadline_days,
+        proposalsCount: oppProposals.length,
+        proposals: oppProposals,
+        createdAt: row.created_at
+      };
+    });
+
+    res.json(opportunities);
+  } catch (err: any) {
+    res.status(500).json({ error: 'Erro ao carregar oportunidades' });
+  }
+});
+
+app.post('/api/opportunities', async (req, res) => {
+  try {
+    const { title, description, category, specialty, city, state, budgetMin, budgetMax, deadlineDays, ownerId, ownerName, ownerAvatar } = req.body;
+    const oppId = `opp_${Date.now()}`;
+
+    await db.execute({
+      sql: `INSERT INTO opportunities (id, title, description, category, specialty, city, state, budget_min, budget_max, deadline_days, owner_id, owner_name, owner_avatar, status, proposals_count, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'aberta', 0, 'Hoje')`,
+      args: [
+        oppId,
+        title,
+        description,
+        category || 'Obras e Projetos',
+        specialty || 'Engenharia Civil',
+        city || 'São Paulo',
+        state || 'SP',
+        budgetMin || 10000,
+        budgetMax || 50000,
+        deadlineDays || 30,
+        ownerId || 'usr_curr',
+        ownerName || 'Eng. Roberto Silva',
+        ownerAvatar || 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=150&auto=format&fit=crop&q=80'
+      ]
+    });
+
+    res.status(201).json({ id: oppId, title, status: 'aberta' });
+  } catch (err: any) {
+    res.status(500).json({ error: 'Erro ao criar oportunidade' });
+  }
+});
+
+app.post('/api/opportunities/:id/proposals', async (req, res) => {
+  try {
+    const oppId = req.params.id;
+    const { proposerId, proposerName, proposerRole, proposerAvatar, creaCau, value, deadlineDays, scopeDescription, attachmentUrl } = req.body;
+    const propId = `prop_${Date.now()}`;
+
+    await db.execute({
+      sql: `INSERT INTO proposals (id, opportunity_id, proposer_id, proposer_name, proposer_role, proposer_avatar, crea_cau, value, deadline_days, scope_description, attachment_url, status, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'em_negociacao', 'Agora mesmo')`,
+      args: [
+        propId,
+        oppId,
+        proposerId || 'usr_curr',
+        proposerName || 'Eng. Roberto Silva',
+        proposerRole || 'profissional_crea',
+        proposerAvatar || 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=150&auto=format&fit=crop&q=80',
+        creaCau || 'CREA-SP 5069824/D',
+        value,
+        deadlineDays || 30,
+        scopeDescription,
+        attachmentUrl || 'Proposta_Tecnica.pdf'
+      ]
+    });
+
+    await db.execute({
+      sql: "UPDATE opportunities SET proposals_count = proposals_count + 1 WHERE id = ?",
+      args: [oppId]
+    });
+
+    res.status(201).json({ id: propId, opportunityId: oppId, status: 'em_negociacao' });
+  } catch (err: any) {
+    res.status(500).json({ error: 'Erro ao submeter proposta' });
+  }
+});
+
+/* ==========================================================================
+   5. FEED & CARIMBO TÉCNICO
+   ========================================================================== */
 app.get('/api/feed/posts', async (req, res) => {
   try {
     const result = await db.execute("SELECT * FROM posts ORDER BY id DESC");
@@ -164,7 +769,7 @@ app.post('/api/feed/posts', async (req, res) => {
 
     await db.execute({
       sql: `INSERT INTO posts (id, author_id, author_name, author_avatar, author_role, author_badge, category, title, content, media_urls, stamp_id, registration_number, hash_verification, art_rrt_code, city, state, budget_estimated, deadline_days, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Agora mesmo')`,
       args: [
         postId,
         authorId || 'usr_curr',
@@ -183,8 +788,7 @@ app.post('/api/feed/posts', async (req, res) => {
         location?.city || 'São Paulo',
         location?.state || 'SP',
         budgetEstimated || null,
-        deadlineDays || null,
-        'Agora mesmo'
+        deadlineDays || null
       ]
     });
 
@@ -207,128 +811,251 @@ app.post('/api/feed/posts/:id/like', async (req, res) => {
   }
 });
 
-/* ==========================================
-   3. OPPORTUNITIES & PROPOSALS ROUTES
-   ========================================== */
-app.get('/api/opportunities', async (req, res) => {
+/* ==========================================================================
+   6. REALTIME CHAT & MESSAGING
+   ========================================================================== */
+app.get('/api/messages/:threadId', async (req, res) => {
   try {
-    const oppsResult = await db.execute("SELECT * FROM opportunities ORDER BY id DESC");
-    const propsResult = await db.execute("SELECT * FROM proposals");
-
-    const opportunities = oppsResult.rows.map((row: any) => {
-      const oppProposals = propsResult.rows
-        .filter((p: any) => p.opportunity_id === row.id)
-        .map((p: any) => ({
-          id: p.id,
-          opportunityId: p.opportunity_id,
-          proposerId: p.proposer_id,
-          proposerName: p.proposer_name,
-          proposerRole: p.proposer_role,
-          proposerAvatar: p.proposer_avatar,
-          creaCau: p.crea_cau,
-          value: p.value,
-          deadlineDays: p.deadline_days,
-          scopeDescription: p.scope_description,
-          attachmentUrl: p.attachment_url,
-          status: p.status,
-          createdAt: p.created_at
-        }));
-
-      return {
-        id: row.id,
-        title: row.title,
-        description: row.description,
-        category: row.category,
-        specialty: row.specialty,
-        location: { city: row.city, state: row.state },
-        budgetRange: { min: row.budget_min, max: row.budget_max },
-        ownerId: row.owner_id,
-        ownerName: row.owner_name,
-        ownerAvatar: row.owner_avatar,
-        status: row.status,
-        proposalsCount: oppProposals.length,
-        proposals: oppProposals,
-        createdAt: row.created_at
-      };
+    const result = await db.execute({
+      sql: "SELECT * FROM messages ORDER BY id ASC",
+      args: []
     });
-
-    res.json(opportunities);
+    res.json(result.rows);
   } catch (err: any) {
-    res.status(500).json({ error: 'Erro ao carregar oportunidades' });
+    res.status(500).json({ error: 'Erro ao carregar mensagens' });
   }
 });
 
-app.post('/api/opportunities', async (req, res) => {
+app.post('/api/messages', async (req, res) => {
   try {
-    const { title, description, category, specialty, city, state, budgetMin, budgetMax, ownerId, ownerName, ownerAvatar } = req.body;
-    const oppId = `opp_${Date.now()}`;
+    const { threadId, senderId, senderName, receiverId, text, attachmentUrl } = req.body;
+    const msgId = `msg_${Date.now()}`;
+    const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const now = new Date().toISOString();
 
     await db.execute({
-      sql: `INSERT INTO opportunities (id, title, description, category, specialty, city, state, budget_min, budget_max, owner_id, owner_name, owner_avatar, status, proposals_count, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'aberto', 0, 'Hoje')`,
+      sql: `INSERT INTO messages (id, thread_id, sender_id, sender_name, receiver_id, text, attachment_url, timestamp, read, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, ?)`,
       args: [
-        oppId,
-        title,
-        description,
-        category || 'Obras e Projetos',
-        specialty || 'Engenharia Civil',
-        city || 'São Paulo',
-        state || 'SP',
-        budgetMin || 10000,
-        budgetMax || 50000,
-        ownerId || 'usr_curr',
-        ownerName || 'Eng. Roberto Silva',
-        ownerAvatar || 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=150&auto=format&fit=crop&q=80'
+        msgId,
+        threadId || 'thread_1',
+        senderId || 'usr_curr',
+        senderName || 'Eng. Roberto Silva',
+        receiverId || 'usr_camila',
+        text,
+        attachmentUrl || null,
+        timestamp,
+        now
       ]
     });
 
-    res.status(201).json({ id: oppId, title, status: 'aberto' });
+    const msgObj = {
+      id: msgId,
+      threadId: threadId || 'thread_1',
+      senderId: senderId || 'usr_curr',
+      senderName: senderName || 'Eng. Roberto Silva',
+      receiverId: receiverId || 'usr_camila',
+      text,
+      attachmentUrl,
+      timestamp,
+      read: true
+    };
+
+    // Broadcast through WebSocket
+    wss.clients.forEach(client => {
+      if (client.readyState === WebSocket.OPEN) {
+        client.send(JSON.stringify({ type: 'NEW_MESSAGE', data: msgObj }));
+      }
+    });
+
+    res.status(201).json(msgObj);
   } catch (err: any) {
-    res.status(500).json({ error: 'Erro ao criar oportunidade' });
+    res.status(500).json({ error: 'Erro ao salvar mensagem' });
   }
 });
 
-app.post('/api/opportunities/:id/proposals', async (req, res) => {
+/* ==========================================================================
+   7. FAVORITES HUB
+   ========================================================================== */
+app.get('/api/favorites', async (req, res) => {
   try {
-    const oppId = req.params.id;
-    const { proposerId, proposerName, proposerRole, proposerAvatar, creaCau, value, deadlineDays, scopeDescription, attachmentUrl } = req.body;
-    const propId = `prop_${Date.now()}`;
+    const { userId } = req.query;
+    const result = await db.execute({
+      sql: "SELECT * FROM favorites WHERE user_id = ? ORDER BY id DESC",
+      args: [userId ? String(userId) : 'usr_curr']
+    });
+    res.json(result.rows);
+  } catch (err: any) {
+    res.status(500).json({ error: 'Erro ao carregar favoritos' });
+  }
+});
+
+app.post('/api/favorites', async (req, res) => {
+  try {
+    const { userId, targetType, targetId, targetTitle, targetSubtitle, targetAvatar } = req.body;
+    const favId = `fav_${Date.now()}`;
+
+    // Check if already favorited
+    const existing = await db.execute({
+      sql: "SELECT id FROM favorites WHERE user_id = ? AND target_id = ?",
+      args: [userId || 'usr_curr', targetId]
+    });
+
+    if (existing.rows.length > 0) {
+      await db.execute({
+        sql: "DELETE FROM favorites WHERE id = ?",
+        args: [existing.rows[0].id]
+      });
+      return res.json({ favorited: false, id: targetId });
+    }
 
     await db.execute({
-      sql: `INSERT INTO proposals (id, opportunity_id, proposer_id, proposer_name, proposer_role, proposer_avatar, crea_cau, value, deadline_days, scope_description, attachment_url, status, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      sql: `INSERT INTO favorites (id, user_id, target_type, target_id, target_title, target_subtitle, target_avatar, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
       args: [
-        propId,
-        oppId,
-        proposerId || 'usr_curr',
-        proposerName || 'Eng. Roberto Silva',
-        proposerRole || 'profissional_crea',
-        proposerAvatar || 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=150&auto=format&fit=crop&q=80',
-        creaCau || 'CREA-SP 5069824/D',
-        value,
-        deadlineDays,
-        scopeDescription,
-        attachmentUrl || 'Proposta_Tecnica.pdf',
-        'em_negociacao',
-        'Agora mesmo'
+        favId,
+        userId || 'usr_curr',
+        targetType || 'professional',
+        targetId,
+        targetTitle,
+        targetSubtitle || '',
+        targetAvatar || '',
+        new Date().toISOString()
       ]
     });
 
-    // Update count in opportunity
-    await db.execute({
-      sql: "UPDATE opportunities SET proposals_count = proposals_count + 1 WHERE id = ?",
-      args: [oppId]
-    });
-
-    res.status(201).json({ id: propId, opportunityId: oppId, status: 'em_negociacao' });
+    res.status(201).json({ favorited: true, id: targetId, favoriteId: favId });
   } catch (err: any) {
-    res.status(500).json({ error: 'Erro ao submeter proposta' });
+    res.status(500).json({ error: 'Erro ao favoritar item' });
   }
 });
 
-/* ==========================================
-   4. ALICERCE ADS & PIX CHECKOUT
-   ========================================== */
+/* ==========================================================================
+   8. REVIEWS & RATINGS
+   ========================================================================== */
+app.get('/api/reviews/:userId', async (req, res) => {
+  try {
+    const targetUserId = req.params.userId;
+    const result = await db.execute({
+      sql: "SELECT * FROM reviews WHERE target_user_id = ? ORDER BY id DESC",
+      args: [targetUserId]
+    });
+    res.json(result.rows);
+  } catch (err: any) {
+    res.status(500).json({ error: 'Erro ao buscar avaliações' });
+  }
+});
+
+app.post('/api/reviews', async (req, res) => {
+  try {
+    const { reviewerId, reviewerName, reviewerAvatar, targetUserId, rating, comment, contractType } = req.body;
+    const reviewId = `rev_${Date.now()}`;
+    const now = new Date().toLocaleDateString('pt-BR');
+
+    await db.execute({
+      sql: `INSERT INTO reviews (id, reviewer_id, reviewer_name, reviewer_avatar, target_user_id, rating, comment, contract_type, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      args: [
+        reviewId,
+        reviewerId || 'usr_curr',
+        reviewerName || 'Cliente ALICERCE',
+        reviewerAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+        targetUserId,
+        rating || 5,
+        comment || 'Excelente atendimento e pontualidade na execução da obra!',
+        contractType || 'Contrato de Obra',
+        now
+      ]
+    });
+
+    // Recalculate average rating
+    const avgResult = await db.execute({
+      sql: "SELECT AVG(rating) as avg_rate, COUNT(*) as cnt FROM reviews WHERE target_user_id = ?",
+      args: [targetUserId]
+    });
+
+    const avgRate = Number(avgResult.rows[0].avg_rate || 5.0).toFixed(1);
+    const revCount = Number(avgResult.rows[0].cnt || 1);
+
+    await db.execute({
+      sql: "UPDATE professional_profiles SET rating = ?, reviews_count = ? WHERE user_id = ?",
+      args: [avgRate, revCount, targetUserId]
+    });
+
+    res.status(201).json({ id: reviewId, rating: avgRate, reviewsCount: revCount });
+  } catch (err: any) {
+    res.status(500).json({ error: 'Erro ao enviar avaliação' });
+  }
+});
+
+/* ==========================================================================
+   9. CATEGORIES DIRECTORY
+   ========================================================================== */
+app.get('/api/categories', async (req, res) => {
+  try {
+    const result = await db.execute("SELECT * FROM categories ORDER BY name ASC");
+    res.json(result.rows);
+  } catch (err: any) {
+    res.status(500).json({ error: 'Erro ao buscar categorias' });
+  }
+});
+
+/* ==========================================================================
+   10. ADMIN DASHBOARD & METRICS
+   ========================================================================== */
+app.get('/api/admin/metrics', async (req, res) => {
+  try {
+    const [usersCnt, profCnt, compCnt, suppCnt, oppsCnt, propsCnt, revsCnt] = await Promise.all([
+      db.execute("SELECT COUNT(*) as c FROM users"),
+      db.execute("SELECT COUNT(*) as c FROM professional_profiles"),
+      db.execute("SELECT COUNT(*) as c FROM company_profiles"),
+      db.execute("SELECT COUNT(*) as c FROM supplier_profiles"),
+      db.execute("SELECT COUNT(*) as c FROM opportunities"),
+      db.execute("SELECT COUNT(*) as c FROM proposals"),
+      db.execute("SELECT COUNT(*) as c FROM reviews")
+    ]);
+
+    res.json({
+      totalUsers: Number(usersCnt.rows[0].c),
+      totalProfessionals: Number(profCnt.rows[0].c),
+      totalCompanies: Number(compCnt.rows[0].c),
+      totalSuppliers: Number(suppCnt.rows[0].c),
+      totalOpportunities: Number(oppsCnt.rows[0].c),
+      totalProposals: Number(propsCnt.rows[0].c),
+      totalReviews: Number(revsCnt.rows[0].c),
+      platformHealth: '100% Operacional',
+      timestamp: new Date().toISOString()
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: 'Erro ao gerar métricas de admin' });
+  }
+});
+
+app.get('/api/admin/users', async (req, res) => {
+  try {
+    const result = await db.execute("SELECT id, name, email, role, city, state, is_verified, plan, created_at FROM users ORDER BY id DESC LIMIT 50");
+    res.json(result.rows);
+  } catch (err: any) {
+    res.status(500).json({ error: 'Erro ao listar usuários' });
+  }
+});
+
+app.patch('/api/admin/users/:id/verify', async (req, res) => {
+  try {
+    const userId = req.params.id;
+    await db.execute({
+      sql: "UPDATE users SET is_verified = 1, verification_status = 'verified' WHERE id = ?",
+      args: [userId]
+    });
+    res.json({ success: true, userId, status: 'verified' });
+  } catch (err: any) {
+    res.status(500).json({ error: 'Erro ao verificar usuário' });
+  }
+});
+
+/* ==========================================================================
+   11. ALICERCE ADS & PIX CHECKOUT
+   ========================================================================== */
 app.get('/api/ads/campaigns', async (req, res) => {
   try {
     const result = await db.execute("SELECT * FROM ad_campaigns ORDER BY id DESC");
@@ -371,67 +1098,9 @@ app.post('/api/ads/campaigns', async (req, res) => {
   }
 });
 
-/* ==========================================
-   5. MESSAGES & WEBSOCKET REALTIME CHAT
-   ========================================== */
-app.get('/api/messages/:threadId', async (req, res) => {
-  try {
-    const result = await db.execute({
-      sql: "SELECT * FROM messages ORDER BY id ASC",
-      args: []
-    });
-    res.json(result.rows);
-  } catch (err: any) {
-    res.status(500).json({ error: 'Erro ao carregar mensagens' });
-  }
-});
-
-app.post('/api/messages', async (req, res) => {
-  try {
-    const { threadId, senderId, senderName, receiverId, text, attachmentUrl } = req.body;
-    const msgId = `msg_${Date.now()}`;
-    const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
-    await db.execute({
-      sql: `INSERT INTO messages (id, sender_id, sender_name, receiver_id, text, attachment_url, timestamp, read)
-            VALUES (?, ?, ?, ?, ?, ?, ?, 1)`,
-      args: [
-        msgId,
-        senderId || 'usr_curr',
-        senderName || 'Eng. Roberto Silva',
-        receiverId || 'usr_camila',
-        text,
-        attachmentUrl || null,
-        timestamp
-      ]
-    });
-
-    const msgObj = {
-      id: msgId,
-      threadId,
-      senderId: senderId || 'usr_curr',
-      senderName: senderName || 'Eng. Roberto Silva',
-      receiverId: receiverId || 'usr_camila',
-      text,
-      attachmentUrl,
-      timestamp,
-      read: true
-    };
-
-    // Broadcast through WebSocket
-    wss.clients.forEach(client => {
-      if (client.readyState === WebSocket.OPEN) {
-        client.send(JSON.stringify({ type: 'NEW_MESSAGE', data: msgObj }));
-      }
-    });
-
-    res.status(201).json(msgObj);
-  } catch (err: any) {
-    res.status(500).json({ error: 'Erro ao salvar mensagem' });
-  }
-});
-
-// Serve Frontend Production Build (if available)
+/* ==========================================================================
+   12. FRONTEND PRODUCTION STATIC SERVING (Zero-Config Fullstack)
+   ========================================================================== */
 const clientDistCandidates = [
   path.resolve(__dirname, '../../dist'),
   path.resolve(process.cwd(), 'dist'),
@@ -440,7 +1109,7 @@ const clientDistCandidates = [
 const clientDistPath = clientDistCandidates.find(p => fs.existsSync(path.join(p, 'index.html')));
 
 if (clientDistPath) {
-  console.log(`[Frontend] Servindo frontend de: ${clientDistPath}`);
+  console.log(`[Frontend] Servindo arquivos compilados de: ${clientDistPath}`);
   app.use(express.static(clientDistPath));
   app.get('*', (req, res, next) => {
     if (req.path.startsWith('/api') || req.path.startsWith('/ws')) return next();
@@ -452,13 +1121,15 @@ if (clientDistPath) {
       status: 'online',
       service: 'ALICERCE Backend API',
       database: 'Turso DB (@libsql/client)',
-      version: '1.0.0',
+      version: '2.0.0',
       timestamp: new Date().toISOString()
     });
   });
 }
 
-/* Create HTTP Server & WebSocket Server */
+/* ==========================================================================
+   13. HTTP & WEBSOCKET SERVER
+   ========================================================================== */
 const server = http.createServer(app);
 const wss = new WebSocketServer({ server });
 
@@ -470,7 +1141,6 @@ wss.on('connection', (ws: WebSocket) => {
       const data = JSON.parse(message.toString());
       console.log('[WebSocket] Mensagem recebida:', data);
       
-      // Broadcast message to all connected clients
       wss.clients.forEach(client => {
         if (client.readyState === WebSocket.OPEN) {
           client.send(JSON.stringify({ type: 'NEW_MESSAGE', data }));
@@ -484,7 +1154,7 @@ wss.on('connection', (ws: WebSocket) => {
 
 server.listen(Number(PORT), '0.0.0.0', () => {
   console.log(`\n==================================================`);
-  console.log(`🚀 ALICERCE Backend Rodando na Porta ${PORT}`);
+  console.log(`🚀 ALICERCE Backend v2.0 Rodando na Porta ${PORT}`);
   console.log(`🌐 Turso DB / libSQL Conectado com Sucesso`);
   console.log(`💬 Servidor WebSocket Ativo para Chat em Tempo Real`);
   console.log(`==================================================\n`);

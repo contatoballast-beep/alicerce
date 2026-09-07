@@ -1,8 +1,12 @@
 export type UserRole = 
+  | 'cliente'
   | 'pessoa_fisica' 
+  | 'profissional'
   | 'profissional_crea' 
   | 'profissional_cau' 
+  | 'empresa'
   | 'empresa_cnpj' 
+  | 'fornecedor'
   | 'investidor' 
   | 'admin';
 
@@ -15,23 +19,122 @@ export interface UserProfile {
   bio?: string;
   creaCauNumber?: string; // Ex: CREA-SP 5069824/D or CAU A12345-6
   cnpjNumber?: string;    // Ex: 12.345.678/0001-90
-  verified: boolean;
-  twoFactorEnabled: boolean;
   phone?: string;
+  whatsapp?: string;
   city: string;
   state: string;
+  verified: boolean;
+  twoFactorEnabled?: boolean;
   specialties?: string[];
   portfolioCount?: number;
   rating?: number;
   reviewsCount?: number;
   consentLgpd: boolean;
+  plan?: string;
   createdAt: string;
+}
+
+export interface ProfessionalProfile {
+  id: string;
+  userId?: string;
+  name: string;
+  email?: string;
+  avatar: string;
+  profession: string;
+  specialty: string;
+  experienceYears: number;
+  services: string[];
+  creaCauNumber?: string;
+  phone?: string;
+  whatsapp?: string;
+  bio?: string;
+  city: string;
+  state: string;
+  rating: number;
+  reviewsCount: number;
+  availability: string;
+  isVerified: boolean;
+}
+
+export interface CompanyProfile {
+  id: string;
+  name: string;
+  tradeName?: string;
+  cnpj: string;
+  city: string;
+  state: string;
+  phone?: string;
+  whatsapp?: string;
+  website?: string;
+  avatar?: string;
+  categories: string[];
+  services: string[];
+  rating: number;
+  reviewsCount: number;
+  isVerified: boolean;
+}
+
+export interface SupplierProfile {
+  id: string;
+  name: string;
+  cnpj?: string;
+  category: string;
+  productTypes: string[];
+  deliveryAvailable: boolean;
+  city: string;
+  state: string;
+  phone?: string;
+  whatsapp?: string;
+  website?: string;
+  avatar?: string;
+  rating: number;
+  reviewsCount: number;
+}
+
+export interface QuoteItem {
+  id?: string;
+  productName: string;
+  quantity: number;
+  unit: string;
+  notes?: string;
+}
+
+export interface QuoteResponse {
+  id: string;
+  supplierId: string;
+  supplierName: string;
+  unitPrice: number;
+  totalPrice: number;
+  shippingPrice: number;
+  totalSum: number;
+  deliveryDays: number;
+  validityDays: number;
+  notes?: string;
+  createdAt: string;
+}
+
+export interface QuoteRequest {
+  id: string;
+  requesterId: string;
+  requesterName: string;
+  requesterPhone?: string;
+  requesterWhatsapp?: string;
+  supplierId?: string;
+  supplierName?: string;
+  deliveryAddress: string;
+  city: string;
+  state: string;
+  status: 'aberta' | 'respondida' | 'fechada' | 'cancelada';
+  notes?: string;
+  createdAt: string;
+  items: QuoteItem[];
+  responses?: QuoteResponse[];
 }
 
 export interface TechnicalStamp {
   stampId: string; // Ex: ALC-2026-8849
   registrationNumber: string; // CREA/CAU/CNPJ
-  issueDate: string;
+  issueDate?: string;
   hashVerification: string; // SHA-256 preview
   artRrtCode?: string; // Ex: ART SP2026/099182
   status: 'valid' | 'pending' | 'revoked';
@@ -67,7 +170,7 @@ export interface Post {
   createdAt: string;
 }
 
-export type OpportunityStatus = 'aberto' | 'em_negociacao' | 'contratado' | 'concluido';
+export type OpportunityStatus = 'aberta' | 'aberto' | 'em_negociacao' | 'contratado' | 'concluida' | 'cancelada';
 
 export interface Proposal {
   id: string;
@@ -103,6 +206,7 @@ export interface Opportunity {
   ownerName: string;
   ownerAvatar: string;
   status: OpportunityStatus;
+  deadlineDays?: number;
   proposalsCount: number;
   proposals: Proposal[];
   createdAt: string;
@@ -162,12 +266,35 @@ export interface ChatThread {
   unreadCount: number;
 }
 
+export interface FavoriteItem {
+  id: string;
+  user_id?: string;
+  target_type: 'professional' | 'company' | 'supplier' | 'opportunity';
+  target_id: string;
+  target_title: string;
+  target_subtitle?: string;
+  target_avatar?: string;
+  created_at: string;
+}
+
+export interface ReviewItem {
+  id: string;
+  reviewer_id: string;
+  reviewer_name: string;
+  reviewer_avatar?: string;
+  target_user_id: string;
+  rating: number;
+  comment: string;
+  contract_type?: string;
+  created_at: string;
+}
+
 export interface AdCampaign {
   id: string;
   userId: string;
   title: string;
   objective: 'Destaque de Perfil' | 'Destaque de Obra' | 'Captação de Leads';
-  targetAudience: string[];
+  targetAudience?: string[];
   targetRegion: string;
   dailyBudget: number;
   totalBudget: number;
@@ -177,6 +304,7 @@ export interface AdCampaign {
   status: 'ativa' | 'pausada' | 'finalizada' | 'aguardando_pagamento';
   paymentMethod: 'pix' | 'cartao';
   pixQrCode?: string;
+  pixCopiaCola?: string;
   pixCopiaECola?: string;
   invoiceNfseUrl?: string;
   createdAt: string;
@@ -192,4 +320,15 @@ export interface ModerationItem {
   reportsCount: number;
   status: 'pendente' | 'aprovado' | 'removido';
   createdAt: string;
+}
+
+export interface AdminMetrics {
+  totalUsers: number;
+  totalProfessionals: number;
+  totalCompanies: number;
+  totalSuppliers: number;
+  totalOpportunities: number;
+  totalProposals: number;
+  totalReviews: number;
+  platformHealth: string;
 }

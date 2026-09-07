@@ -1,11 +1,24 @@
 import { LocalApiService } from './api';
-import { Post, Opportunity, AdCampaign, ChatMessage, UserProfile, UserRole } from '../types';
+import { 
+  Post, 
+  Opportunity, 
+  AdCampaign, 
+  ChatMessage, 
+  UserProfile, 
+  UserRole,
+  ProfessionalProfile,
+  CompanyProfile,
+  SupplierProfile,
+  QuoteRequest,
+  FavoriteItem,
+  ReviewItem,
+  AdminMetrics
+} from '../types';
 
 const getApiBaseUrl = (): string => {
   if (import.meta.env.VITE_API_URL) {
     return import.meta.env.VITE_API_URL;
   }
-  // If in browser and not running on localhost:3000/5173, use relative root
   if (typeof window !== 'undefined') {
     const isDevPort = window.location.port === '3000' || window.location.port === '5173';
     if (!isDevPort) {
@@ -51,7 +64,7 @@ const getHeaders = () => {
 };
 
 export const RealApiClient = {
-  // Check Health
+  // 1. Health Check
   async checkHealth(): Promise<{ ok: boolean; status?: string; database?: string }> {
     try {
       const res = await fetch(`${API_BASE_URL}/api/health`);
@@ -64,7 +77,7 @@ export const RealApiClient = {
     return { ok: false };
   },
 
-  // Auth: Login
+  // 2. Auth: Login & Register
   async login(email: string, password: string): Promise<{ token?: string; user?: UserProfile; error?: string }> {
     try {
       const res = await fetch(`${API_BASE_URL}/api/auth/login`, {
@@ -86,7 +99,6 @@ export const RealApiClient = {
     }
   },
 
-  // Auth: Register
   async register(userData: {
     name: string;
     email: string;
@@ -94,6 +106,8 @@ export const RealApiClient = {
     role: UserRole;
     creaCauNumber?: string;
     cnpjNumber?: string;
+    phone?: string;
+    whatsapp?: string;
     city?: string;
     state?: string;
   }): Promise<{ token?: string; user?: UserProfile; error?: string }> {
@@ -123,7 +137,140 @@ export const RealApiClient = {
     }
   },
 
-  // Feed Posts
+  async updateProfile(profileData: Partial<UserProfile>): Promise<boolean> {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/user/profile`, {
+        method: 'PUT',
+        headers: getHeaders(),
+        body: JSON.stringify(profileData),
+      });
+      return res.ok;
+    } catch (err) {
+      return false;
+    }
+  },
+
+  // 3. Directory: Professionals, Companies, Suppliers
+  async getProfessionals(filters?: { q?: string; city?: string; state?: string; specialty?: string }): Promise<ProfessionalProfile[]> {
+    try {
+      const params = new URLSearchParams();
+      if (filters?.q) params.set('q', filters.q);
+      if (filters?.city) params.set('city', filters.city);
+      if (filters?.state) params.set('state', filters.state);
+      if (filters?.specialty) params.set('specialty', filters.specialty);
+
+      const res = await fetch(`${API_BASE_URL}/api/professionals?${params.toString()}`);
+      if (res.ok) {
+        return await res.json();
+      }
+    } catch (err) {
+      console.warn('[API Client] Erro ao carregar profissionais:', err);
+    }
+    return [];
+  },
+
+  async getCompanies(filters?: { q?: string; city?: string }): Promise<CompanyProfile[]> {
+    try {
+      const params = new URLSearchParams();
+      if (filters?.q) params.set('q', filters.q);
+      if (filters?.city) params.set('city', filters.city);
+
+      const res = await fetch(`${API_BASE_URL}/api/companies?${params.toString()}`);
+      if (res.ok) {
+        return await res.json();
+      }
+    } catch (err) {
+      console.warn('[API Client] Erro ao carregar empresas:', err);
+    }
+    return [];
+  },
+
+  async getSuppliers(filters?: { q?: string; category?: string; city?: string }): Promise<SupplierProfile[]> {
+    try {
+      const params = new URLSearchParams();
+      if (filters?.q) params.set('q', filters.q);
+      if (filters?.category) params.set('category', filters.category);
+      if (filters?.city) params.set('city', filters.city);
+
+      const res = await fetch(`${API_BASE_URL}/api/suppliers?${params.toString()}`);
+      if (res.ok) {
+        return await res.json();
+      }
+    } catch (err) {
+      console.warn('[API Client] Erro ao carregar fornecedores:', err);
+    }
+    return [];
+  },
+
+  // 4. Material Quotations (Cotações de Materiais)
+  async createQuoteRequest(data: {
+    requesterId: string;
+    requesterName: string;
+    requesterPhone?: string;
+    requesterWhatsapp?: string;
+    supplierId?: string;
+    supplierName?: string;
+    deliveryAddress: string;
+    city: string;
+    state: string;
+    notes?: string;
+    items: Array<{ productName: string; quantity: number; unit: string; notes?: string }>;
+  }): Promise<{ id: string; status: string }> {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/quotes`, {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify(data),
+      });
+      if (res.ok) {
+        return await res.json();
+      }
+    } catch (err) {
+      console.warn('[API Client] Erro ao criar cotação:', err);
+    }
+    return { id: `quote_${Date.now()}`, status: 'aberta' };
+  },
+
+  async getQuoteRequests(filters?: { userId?: string; supplierId?: string }): Promise<QuoteRequest[]> {
+    try {
+      const params = new URLSearchParams();
+      if (filters?.userId) params.set('userId', filters.userId);
+      if (filters?.supplierId) params.set('supplierId', filters.supplierId);
+
+      const res = await fetch(`${API_BASE_URL}/api/quotes?${params.toString()}`);
+      if (res.ok) {
+        return await res.json();
+      }
+    } catch (err) {
+      console.warn('[API Client] Erro ao buscar cotações:', err);
+    }
+    return [];
+  },
+
+  async respondQuote(quoteId: string, responseData: {
+    supplierId: string;
+    supplierName: string;
+    unitPrice: number;
+    totalPrice: number;
+    shippingPrice: number;
+    totalSum: number;
+    deliveryDays: number;
+    validityDays: number;
+    notes?: string;
+  }): Promise<boolean> {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/quotes/${quoteId}/respond`, {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify(responseData),
+      });
+      return res.ok;
+    } catch (err) {
+      return false;
+    }
+  },
+
+  // 5. Feed Posts & Carimbo Técnico
   async getPosts(): Promise<Post[]> {
     try {
       const res = await fetch(`${API_BASE_URL}/api/feed/posts`);
@@ -148,7 +295,6 @@ export const RealApiClient = {
       });
       if (res.ok) {
         const data = await res.json();
-        // Also update local cache
         LocalApiService.addPost(postData);
         return data;
       }
@@ -170,10 +316,16 @@ export const RealApiClient = {
     return LocalApiService.toggleLikePost(postId);
   },
 
-  // Opportunities & Proposals
-  async getOpportunities(): Promise<Opportunity[]> {
+  // 6. Opportunities & Demands
+  async getOpportunities(filters?: { q?: string; category?: string; city?: string; status?: string }): Promise<Opportunity[]> {
     try {
-      const res = await fetch(`${API_BASE_URL}/api/opportunities`);
+      const params = new URLSearchParams();
+      if (filters?.q) params.set('q', filters.q);
+      if (filters?.category) params.set('category', filters.category);
+      if (filters?.city) params.set('city', filters.city);
+      if (filters?.status) params.set('status', filters.status);
+
+      const res = await fetch(`${API_BASE_URL}/api/opportunities?${params.toString()}`);
       if (res.ok) {
         const data = await res.json();
         if (Array.isArray(data) && data.length > 0) {
@@ -220,7 +372,118 @@ export const RealApiClient = {
     return LocalApiService.addProposal(oppId, proposalData);
   },
 
-  // Ads Campaigns
+  // 7. Favorites
+  async getFavorites(userId?: string): Promise<FavoriteItem[]> {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/favorites?userId=${userId || 'usr_curr'}`);
+      if (res.ok) {
+        return await res.json();
+      }
+    } catch (err) {
+      console.warn('[API Client] Erro ao carregar favoritos:', err);
+    }
+    return [];
+  },
+
+  async toggleFavorite(data: {
+    userId?: string;
+    targetType: 'professional' | 'company' | 'supplier' | 'opportunity';
+    targetId: string;
+    targetTitle: string;
+    targetSubtitle?: string;
+    targetAvatar?: string;
+  }): Promise<{ favorited: boolean }> {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/favorites`, {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify(data),
+      });
+      if (res.ok) {
+        return await res.json();
+      }
+    } catch (err) {
+      console.warn('[API Client] Erro ao favoritar:', err);
+    }
+    return { favorited: true };
+  },
+
+  // 8. Reviews
+  async getReviews(userId: string): Promise<ReviewItem[]> {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/reviews/${userId}`);
+      if (res.ok) {
+        return await res.json();
+      }
+    } catch (err) {
+      console.warn('[API Client] Erro ao buscar avaliações:', err);
+    }
+    return [];
+  },
+
+  async createReview(data: {
+    reviewerId?: string;
+    reviewerName: string;
+    reviewerAvatar?: string;
+    targetUserId: string;
+    rating: number;
+    comment: string;
+    contractType?: string;
+  }): Promise<boolean> {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/reviews`, {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify(data),
+      });
+      return res.ok;
+    } catch (err) {
+      return false;
+    }
+  },
+
+  // 9. Admin Operations
+  async getAdminMetrics(): Promise<AdminMetrics | null> {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/admin/metrics`, {
+        headers: getHeaders(),
+      });
+      if (res.ok) {
+        return await res.json();
+      }
+    } catch (err) {
+      console.warn('[API Client] Erro ao buscar métricas de admin:', err);
+    }
+    return null;
+  },
+
+  async getAdminUsers(): Promise<any[]> {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/admin/users`, {
+        headers: getHeaders(),
+      });
+      if (res.ok) {
+        return await res.json();
+      }
+    } catch (err) {
+      console.warn('[API Client] Erro ao buscar usuários admin:', err);
+    }
+    return [];
+  },
+
+  async verifyUser(userId: string): Promise<boolean> {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/admin/users/${userId}/verify`, {
+        method: 'PATCH',
+        headers: getHeaders(),
+      });
+      return res.ok;
+    } catch (err) {
+      return false;
+    }
+  },
+
+  // 10. Ads Campaigns
   async getCampaigns(): Promise<AdCampaign[]> {
     try {
       const res = await fetch(`${API_BASE_URL}/api/ads/campaigns`);
@@ -254,7 +517,7 @@ export const RealApiClient = {
     return LocalApiService.addCampaign(campData);
   },
 
-  // Chat Messages & WebSocket
+  // 11. Chat Messages & WebSocket
   async getMessages(threadId: string): Promise<ChatMessage[]> {
     try {
       const res = await fetch(`${API_BASE_URL}/api/messages/${threadId}`);
@@ -297,7 +560,6 @@ export const RealApiClient = {
     return LocalApiService.sendMessage(threadId, text, attachmentUrl);
   },
 
-  // WebSocket connection for real-time live chat
   connectWebSocket(onMessage: (msg: any) => void): WebSocket | null {
     try {
       const wsUrl = getWebSocketUrl();
@@ -312,7 +574,7 @@ export const RealApiClient = {
           const payload = JSON.parse(event.data);
           onMessage(payload);
         } catch (e) {
-          console.error('[WebSocket] Erro ao parsear mensagem:', e);
+          console.error('[WebSocket] Erro ao processar mensagem recebida:', e);
         }
       };
 

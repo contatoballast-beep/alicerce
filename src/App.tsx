@@ -1,7 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { LocalApiService } from './services/api';
 import { RealApiClient } from './services/realApiClient';
-import { UserProfile, Post, Opportunity, Proposal, ConstructionProject, AdCampaign, ModerationItem, UserRole, ChatMessage } from './types';
+import { 
+  UserProfile, 
+  Post, 
+  Opportunity, 
+  ConstructionProject, 
+  AdCampaign, 
+  ModerationItem, 
+  UserRole, 
+  ChatMessage,
+  ProfessionalProfile,
+  CompanyProfile,
+  SupplierProfile,
+  FavoriteItem
+} from './types';
 
 // Layout & Components
 import { Navbar } from './components/Navbar';
@@ -13,25 +26,33 @@ import { LGPDModal } from './modules/auth/LGPDModal';
 import { CreatePostModal } from './modules/feed/CreatePostModal';
 import { ProposalModal } from './modules/opportunities/ProposalModal';
 import { OpportunityDetailModal } from './modules/opportunities/OpportunityDetailModal';
+import { CreateOpportunityModal } from './modules/opportunities/CreateOpportunityModal';
+import { QuoteModal } from './modules/directory/QuoteModal';
+import { ProfileDetailModal } from './modules/directory/ProfileDetailModal';
 import { CheckoutModal } from './modules/ads/CheckoutModal';
 
 // Views
 import { FeedView } from './modules/feed/FeedView';
+import { DirectoryView } from './modules/directory/DirectoryView';
 import { OpportunitiesView } from './modules/opportunities/OpportunitiesView';
+import { QuotesView } from './modules/quotes/QuotesView';
 import { ConstructionTimelineView } from './modules/timeline/ConstructionTimelineView';
 import { MessagingView } from './modules/chat/MessagingView';
+import { FavoritesView } from './modules/favorites/FavoritesView';
 import { AdsCampaignView } from './modules/ads/AdsCampaignView';
 import { AdminDashboardView } from './modules/admin/AdminDashboardView';
 import { SwaggerSpecView } from './modules/admin/SwaggerSpecView';
 
 export const App: React.FC = () => {
-  // State
+  // Main State
   const [currentUser, setCurrentUser] = useState<UserProfile>(LocalApiService.getUser());
   const [posts, setPosts] = useState<Post[]>(LocalApiService.getPosts());
   const [opportunities, setOpportunities] = useState<Opportunity[]>(LocalApiService.getOpportunities());
   const [projects, setProjects] = useState<ConstructionProject[]>(LocalApiService.getProjects());
   const [campaigns, setCampaigns] = useState<AdCampaign[]>(LocalApiService.getCampaigns());
   const [moderationItems, setModerationItems] = useState<ModerationItem[]>(LocalApiService.getModerationQueue());
+  const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
+
   const [chatMessages, setChatMessages] = useState<Record<string, ChatMessage[]>>({
     'thread_1': LocalApiService.getMessages('thread_1'),
     'thread_2': LocalApiService.getMessages('thread_2'),
@@ -43,14 +64,22 @@ export const App: React.FC = () => {
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [serverOnline, setServerOnline] = useState<boolean | null>(null);
 
-  // Modal States
+  // Modal Control States
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [lgpdModalOpen, setLgpdModalOpen] = useState(false);
   const [createPostOpen, setCreatePostOpen] = useState(false);
+  const [createOpportunityOpen, setCreateOpportunityOpen] = useState(false);
   const [proposalModalOpen, setProposalModalOpen] = useState(false);
   const [selectedOppForProposal, setSelectedOppForProposal] = useState<Opportunity | null>(null);
   const [oppDetailModalOpen, setOppDetailModalOpen] = useState(false);
   const [selectedOppDetail, setSelectedOppDetail] = useState<Opportunity | null>(null);
+  
+  const [quoteModalOpen, setQuoteModalOpen] = useState(false);
+  const [targetForQuote, setTargetForQuote] = useState<any | null>(null);
+  
+  const [profileModalOpen, setProfileModalOpen] = useState(false);
+  const [selectedProfileDetail, setSelectedProfileDetail] = useState<any | null>(null);
+
   const [checkoutModalOpen, setCheckoutModalOpen] = useState(false);
   const [selectedCampaignForCheckout, setSelectedCampaignForCheckout] = useState<AdCampaign | null>(null);
 
@@ -59,29 +88,32 @@ export const App: React.FC = () => {
     setTimeout(() => setToastMessage(null), 3500);
   };
 
-  // Synchronize with real backend on load and WebSocket
+  // Sync Backend on Startup
   useEffect(() => {
-    // 1. Health check & Initial fetch
     const syncBackendData = async () => {
       const health = await RealApiClient.checkHealth();
       setServerOnline(health.ok);
 
       if (health.ok) {
         console.log('[ALICERCE] Backend conectado com sucesso!', health);
-        const [fetchedPosts, fetchedOpps, fetchedCamps] = await Promise.all([
+        const [fetchedPosts, fetchedOpps, fetchedCamps, fetchedFavs] = await Promise.all([
           RealApiClient.getPosts(),
           RealApiClient.getOpportunities(),
           RealApiClient.getCampaigns(),
+          RealApiClient.getFavorites(currentUser.id),
         ]);
         if (fetchedPosts?.length) setPosts(fetchedPosts);
         if (fetchedOpps?.length) setOpportunities(fetchedOpps);
         if (fetchedCamps?.length) setCampaigns(fetchedCamps);
+        if (fetchedFavs?.length) {
+          setFavoriteIds(new Set(fetchedFavs.map(f => f.target_id)));
+        }
       }
     };
 
     syncBackendData();
 
-    // 2. Connect to WebSocket for Real-time messaging
+    // Connect WebSocket for Live Real-time Chat
     const ws = RealApiClient.connectWebSocket((payload) => {
       if (payload.type === 'NEW_MESSAGE' && payload.data) {
         const newMsg = payload.data as ChatMessage;
@@ -101,7 +133,7 @@ export const App: React.FC = () => {
         ws.close();
       }
     };
-  }, []);
+  }, [currentUser.id]);
 
   const handleSwitchRole = (role: UserRole) => {
     const updated = LocalApiService.switchRole(role);
@@ -168,6 +200,28 @@ export const App: React.FC = () => {
     showToast(`Conversa iniciada com ${authorName}`);
   };
 
+  const handleToggleFavorite = async (target: any) => {
+    const isFav = favoriteIds.has(target.id);
+    await RealApiClient.toggleFavorite({
+      userId: currentUser.id,
+      targetType: target.profession ? 'professional' : target.cnpj ? 'company' : target.category ? 'supplier' : 'opportunity',
+      targetId: target.id,
+      targetTitle: target.name || target.title,
+      targetSubtitle: target.profession || target.specialty || target.category,
+      targetAvatar: target.avatar
+    });
+
+    const newFavs = new Set(favoriteIds);
+    if (isFav) {
+      newFavs.delete(target.id);
+      showToast("Item removido dos favoritos.");
+    } else {
+      newFavs.add(target.id);
+      showToast("Item salvo nos favoritos!");
+    }
+    setFavoriteIds(newFavs);
+  };
+
   const handleResolveModeration = (itemId: string, status: 'aprovado' | 'removido') => {
     const updated = LocalApiService.resolveModerationItem(itemId, status);
     setModerationItems(updated);
@@ -200,7 +254,7 @@ export const App: React.FC = () => {
       <div style={{ background: 'var(--paper)', borderBottom: '1px solid var(--steel-line)', padding: '4px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '11px', color: 'var(--steel)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <span style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', background: serverOnline ? '#10B981' : '#F59E0B' }}></span>
-          <span>{serverOnline ? 'Backend API & Turso DB: Conectados' : 'Modo Híbrido: Local + Fallback Resiliente Ativo'}</span>
+          <span>{serverOnline ? 'Backend API REST & Turso DB: 100% Conectados e Operacionais' : 'Modo Híbrido: Conexão Local Ativa'}</span>
         </div>
         <div className="mono" style={{ fontSize: '10px' }}>
           Realtime WebSocket: {serverOnline ? 'Online (WSS)' : 'Pronto'}
@@ -209,6 +263,7 @@ export const App: React.FC = () => {
 
       {/* Main View Router */}
       <main style={{ flex: 1 }}>
+        
         {activeTab === 'feed' && (
           <FeedView 
             posts={posts}
@@ -220,12 +275,39 @@ export const App: React.FC = () => {
           />
         )}
 
+        {activeTab === 'directory' && (
+          <DirectoryView 
+            currentUser={currentUser}
+            onRequestQuote={(target) => {
+              setTargetForQuote(target);
+              setQuoteModalOpen(true);
+            }}
+            onOpenProfile={(target) => {
+              setSelectedProfileDetail(target);
+              setProfileModalOpen(true);
+            }}
+            onToggleFavorite={handleToggleFavorite}
+            favoriteIds={favoriteIds}
+          />
+        )}
+
         {activeTab === 'opportunities' && (
           <OpportunitiesView 
             opportunities={opportunities}
             currentUser={currentUser}
             onSelectOpportunity={handleOpenOppDetail}
             onOpenSendProposal={handleOpenProposalModal}
+            onOpenCreateOpportunity={() => setCreateOpportunityOpen(true)}
+          />
+        )}
+
+        {activeTab === 'quotes' && (
+          <QuotesView 
+            currentUser={currentUser}
+            onOpenNewQuote={() => {
+              setTargetForQuote(null);
+              setQuoteModalOpen(true);
+            }}
           />
         )}
 
@@ -244,6 +326,21 @@ export const App: React.FC = () => {
             onSelectThread={setActiveThreadId}
             getMessages={(tId) => chatMessages[tId] || LocalApiService.getMessages(tId)}
             onSendMessage={handleSendMessage}
+          />
+        )}
+
+        {activeTab === 'favorites' && (
+          <FavoritesView 
+            currentUser={currentUser}
+            onOpenItem={(fav) => {
+              if (fav.target_type === 'opportunity') {
+                const found = opportunities.find(o => o.id === fav.target_id);
+                if (found) handleOpenOppDetail(found);
+              } else {
+                setSelectedProfileDetail({ id: fav.target_id, name: fav.target_title, profession: fav.target_subtitle });
+                setProfileModalOpen(true);
+              }
+            }}
           />
         )}
 
@@ -270,6 +367,7 @@ export const App: React.FC = () => {
         {activeTab === 'swagger' && (
           <SwaggerSpecView />
         )}
+
       </main>
 
       {/* Footer */}
@@ -278,7 +376,9 @@ export const App: React.FC = () => {
         onOpenSwagger={() => setActiveTab('swagger')}
       />
 
-      {/* Modals */}
+      {/* ==========================================================================
+          MODALS
+         ========================================================================== */}
       <AuthModal 
         isOpen={authModalOpen}
         onClose={() => setAuthModalOpen(false)}
@@ -301,6 +401,17 @@ export const App: React.FC = () => {
         onSubmitPost={handleAddPost}
       />
 
+      <CreateOpportunityModal 
+        isOpen={createOpportunityOpen}
+        onClose={() => setCreateOpportunityOpen(false)}
+        currentUser={currentUser}
+        onSubmitSuccess={async () => {
+          const opps = await RealApiClient.getOpportunities();
+          setOpportunities(opps);
+          showToast("Demanda publicada com sucesso no ecossistema ALICERCE!");
+        }}
+      />
+
       <ProposalModal 
         isOpen={proposalModalOpen}
         onClose={() => setProposalModalOpen(false)}
@@ -318,6 +429,32 @@ export const App: React.FC = () => {
           setOppDetailModalOpen(false);
           handleOpenProposalModal(selectedOppDetail || undefined);
         }}
+      />
+
+      <QuoteModal 
+        isOpen={quoteModalOpen}
+        onClose={() => setQuoteModalOpen(false)}
+        targetSupplier={targetForQuote}
+        targetProfessional={targetForQuote}
+        currentUser={currentUser}
+        onSuccess={() => {
+          showToast("Solicitação de cotação enviada com sucesso!");
+          setActiveTab('quotes');
+        }}
+      />
+
+      <ProfileDetailModal 
+        isOpen={profileModalOpen}
+        onClose={() => setProfileModalOpen(false)}
+        profile={selectedProfileDetail}
+        currentUser={currentUser}
+        onRequestQuote={(prof) => {
+          setProfileModalOpen(false);
+          setTargetForQuote(prof);
+          setQuoteModalOpen(true);
+        }}
+        onToggleFavorite={handleToggleFavorite}
+        isFavorited={selectedProfileDetail ? favoriteIds.has(selectedProfileDetail.id) : false}
       />
 
       <CheckoutModal 
