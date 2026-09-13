@@ -17,7 +17,8 @@ import {
   LogOut,
   ShieldCheck,
   Building2,
-  FileText
+  FileText,
+  ClipboardList
 } from 'lucide-react';
 import { UserProfile, UserRole } from '../types';
 
@@ -69,6 +70,7 @@ export const Navbar: React.FC<NavbarProps> = ({
     { id: 'opportunities', label: 'Demandas', icon: Briefcase },
     { id: 'quotes', label: 'Cotações', icon: Truck },
     { id: 'timeline', label: 'Diário', icon: HardHat },
+    { id: 'checklist', label: 'Obra', icon: ClipboardList },
   ];
 
   return (

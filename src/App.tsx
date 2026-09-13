@@ -43,6 +43,7 @@ import { FavoritesView } from './modules/favorites/FavoritesView';
 import { AdsCampaignView } from './modules/ads/AdsCampaignView';
 import { AdminDashboardView } from './modules/admin/AdminDashboardView';
 import { SwaggerSpecView } from './modules/admin/SwaggerSpecView';
+import { ConstructionChecklistView } from './modules/checklist/ConstructionChecklistView';
 
 export const App: React.FC = () => {
   // Main State
@@ -479,6 +480,10 @@ export const App: React.FC = () => {
 
         {activeTab === 'swagger' && (
           <SwaggerSpecView />
+        )}
+
+        {activeTab === 'checklist' && (
+          <ConstructionChecklistView />
         )}
 
       </main>
