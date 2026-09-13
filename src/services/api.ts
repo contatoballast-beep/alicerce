@@ -2,14 +2,14 @@ import { UserProfile, Post, Opportunity, Proposal, ConstructionProject, ChatMess
 import { INITIAL_USER, MOCK_POSTS, MOCK_OPPORTUNITIES, MOCK_PROJECTS, MOCK_CHAT_THREADS, MOCK_MESSAGES, MOCK_CAMPAIGNS, MOCK_MODERATION } from './mockData';
 
 const STORAGE_KEYS = {
-  USER: 'alicerce_user',
-  POSTS: 'alicerce_posts',
-  OPPORTUNITIES: 'alicerce_opportunities',
-  PROJECTS: 'alicerce_projects',
-  CAMPAIGNS: 'alicerce_campaigns',
-  MESSAGES: 'alicerce_messages',
-  THREADS: 'alicerce_chat_threads',
-  MODERATION: 'alicerce_moderation',
+  USER: 'Ballast_user',
+  POSTS: 'Ballast_posts',
+  OPPORTUNITIES: 'Ballast_opportunities',
+  PROJECTS: 'Ballast_projects',
+  CAMPAIGNS: 'Ballast_campaigns',
+  MESSAGES: 'Ballast_messages',
+  THREADS: 'Ballast_chat_threads',
+  MODERATION: 'Ballast_moderation',
 };
 
 // Helper for LocalStorage initialization
@@ -210,7 +210,7 @@ export const LocalApiService = {
     
     // Simulating Pix QR Code & CopyPaste String
     const randomHash = Math.random().toString(36).substring(2, 12).toUpperCase();
-    const pixCode = `00020126580014BR.GOV.BCB.PIX0136alicerce-pay@bancopix.com.br520400005303986540${campData.totalBudget.toFixed(2)}5802BR5916ALICERCE ADS SAO PAULO6009SAO PAULO62070503***6304${randomHash}`;
+    const pixCode = `00020126580014BR.GOV.BCB.PIX0136Ballast-pay@bancopix.com.br520400005303986540${campData.totalBudget.toFixed(2)}5802BR5916Ballast ADS SAO PAULO6009SAO PAULO62070503***6304${randomHash}`;
 
     const newCamp: AdCampaign = {
       ...campData,
@@ -221,7 +221,7 @@ export const LocalApiService = {
       status: 'ativa',
       pixQrCode: `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(pixCode)}`,
       pixCopiaECola: pixCode,
-      invoiceNfseUrl: `NFS-e_ALICERCE_${Math.floor(100000 + Math.random() * 900000)}.pdf`,
+      invoiceNfseUrl: `NFS-e_Ballast_${Math.floor(100000 + Math.random() * 900000)}.pdf`,
       createdAt: new Date().toLocaleDateString('pt-BR'),
     };
 

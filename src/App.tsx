@@ -70,12 +70,12 @@ export const App: React.FC = () => {
   const isGuest = !currentUser || currentUser.id === 'usr_guest';
   // Show landing page for guests unless they explicitly chose to enter the app
   const [showLanding, setShowLanding] = useState<boolean>(() => {
-    const stored = localStorage.getItem('alicerce_entered_app');
+    const stored = localStorage.getItem('Ballast_entered_app');
     return !stored; // show landing if never entered before
   });
 
   const handleEnterApp = () => {
-    localStorage.setItem('alicerce_entered_app', '1');
+    localStorage.setItem('Ballast_entered_app', '1');
     setShowLanding(false);
   };
 
@@ -107,17 +107,17 @@ export const App: React.FC = () => {
   // Sync Backend on Startup
   useEffect(() => {
     try {
-      const storedPosts = localStorage.getItem('alicerce_posts');
+      const storedPosts = localStorage.getItem('Ballast_posts');
       if (storedPosts && (storedPosts.includes('post_1') || storedPosts.includes('Concretagem de Laje Protendida') || storedPosts.includes('Horizon'))) {
-        localStorage.removeItem('alicerce_posts');
+        localStorage.removeItem('Ballast_posts');
       }
-      const storedOpps = localStorage.getItem('alicerce_opportunities');
+      const storedOpps = localStorage.getItem('Ballast_opportunities');
       if (storedOpps && (storedOpps.includes('opp_1') || storedOpps.includes('opp_2') || storedOpps.includes('ViaSul') || storedOpps.includes('União'))) {
-        localStorage.removeItem('alicerce_opportunities');
+        localStorage.removeItem('Ballast_opportunities');
       }
-      const storedProjs = localStorage.getItem('alicerce_projects');
+      const storedProjs = localStorage.getItem('Ballast_projects');
       if (storedProjs && (storedProjs.includes('proj_1') || storedProjs.includes('Jardins das Orquídeas') || storedProjs.includes('Orquídeas'))) {
-        localStorage.removeItem('alicerce_projects');
+        localStorage.removeItem('Ballast_projects');
       }
     } catch (e) {}
 
@@ -126,7 +126,7 @@ export const App: React.FC = () => {
       setServerOnline(health.ok);
 
       if (health.ok) {
-        console.log('[ALICERCE] Backend conectado com sucesso!', health);
+        console.log('[Ballast] Backend conectado com sucesso!', health);
         const [fetchedPosts, fetchedOpps, fetchedCamps, fetchedFavs, fetchedThreads] = await Promise.all([
           RealApiClient.getPosts(),
           RealApiClient.getOpportunities(),
@@ -330,7 +330,7 @@ export const App: React.FC = () => {
     const guestUser: UserProfile = {
       id: 'usr_guest',
       name: 'Visitante',
-      email: 'visitante@alicerce.com.br',
+      email: 'visitante@Ballast.com.br',
       role: 'cliente',
       avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
       city: 'São Paulo',
@@ -342,7 +342,7 @@ export const App: React.FC = () => {
     LocalApiService.updateUser(guestUser);
     setCurrentUser(guestUser);
     // After logout, show landing again
-    localStorage.removeItem('alicerce_entered_app');
+    localStorage.removeItem('Ballast_entered_app');
     setShowLanding(true);
     setActiveTab('feed');
     showToast("Você saiu da sua conta.");
@@ -368,7 +368,7 @@ export const App: React.FC = () => {
             onLoginSuccess={(u) => {
               setCurrentUser(u);
               setShowLanding(false);
-              localStorage.setItem('alicerce_entered_app', '1');
+              localStorage.setItem('Ballast_entered_app', '1');
               showToast(`Bem-vindo, ${u.name}! Autenticado com sucesso.`);
             }}
           />
@@ -586,7 +586,7 @@ export const App: React.FC = () => {
         onSubmitSuccess={async () => {
           const opps = await RealApiClient.getOpportunities();
           setOpportunities(opps);
-          showToast("Demanda publicada com sucesso no ecossistema ALICERCE!");
+          showToast("Demanda publicada com sucesso no ecossistema Ballast!");
         }}
       />
 

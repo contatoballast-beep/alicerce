@@ -86,7 +86,7 @@ export const AdsCampaignView: React.FC<AdsCampaignViewProps> = ({
       }}>
         <div>
           <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--accent-color)', display: 'flex', alignItems: 'center', gap: '6px', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px' }}>
-            <Megaphone size={13} /> ALICERCE ADS · GESTOR DE TRÁFEGO TÉCNICO
+            <Megaphone size={13} /> Ballast ADS · GESTOR DE TRÁFEGO TÉCNICO
           </div>
           <h2 style={{ fontSize: '20px', fontWeight: 800, color: 'var(--text-heading)', margin: 0, letterSpacing: '-0.02em' }}>
             Painel do Anunciante
@@ -364,7 +364,7 @@ export const AdsCampaignView: React.FC<AdsCampaignViewProps> = ({
           <div className="card" style={{ padding: '48px 24px', textAlign: 'center', color: 'var(--text-muted)' }}>
             <Megaphone size={32} color="var(--text-muted)" style={{ margin: '0 auto 12px' }} />
             <div style={{ fontWeight: 700, fontSize: '15px', color: 'var(--text-heading)' }}>Nenhuma campanha cadastrada</div>
-            <div style={{ fontSize: '13px', marginTop: '4px' }}>Clique em "Nova Campanha" para começar a anunciar no ecossistema ALICERCE.</div>
+            <div style={{ fontSize: '13px', marginTop: '4px' }}>Clique em "Nova Campanha" para começar a anunciar no ecossistema Ballast.</div>
           </div>
         )}
       </div>

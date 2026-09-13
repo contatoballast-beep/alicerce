@@ -62,7 +62,7 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
           PAINEL ADMINISTRATIVO & AUDITORIA RBAC
         </div>
         <h2 style={{ fontSize: '22px', fontWeight: 800, color: 'var(--text-heading)', margin: 0, letterSpacing: '-0.02em' }}>
-          Gestão Central ALICERCE
+          Gestão Central Ballast
         </h2>
         <p style={{ fontSize: '13px', color: 'var(--text-muted)', margin: '4px 0 0 0' }}>
           Métricas operacionais da rede, auditoria de verificação de registros CREA/CAU e moderação.

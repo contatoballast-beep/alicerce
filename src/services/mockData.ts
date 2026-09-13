@@ -3,10 +3,10 @@ import { UserProfile, Post, Opportunity, ConstructionProject, ChatThread, ChatMe
 export const INITIAL_USER: UserProfile = {
   id: 'usr_guest',
   name: 'Visitante',
-  email: 'visitante@alicerce.com.br',
+  email: 'visitante@Ballast.com.br',
   role: 'cliente',
   avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-  bio: 'Novo membro no ecossistema ALICERCE.',
+  bio: 'Novo membro no ecossistema Ballast.',
   city: 'São Paulo',
   state: 'SP',
   verified: false,

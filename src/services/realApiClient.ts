@@ -48,7 +48,7 @@ const getWebSocketUrl = (): string => {
 export const API_BASE_URL = getApiBaseUrl();
 
 // Auth Token Helpers
-const TOKEN_KEY = 'alicerce_jwt_token';
+const TOKEN_KEY = 'Ballast_jwt_token';
 export const getAuthToken = () => localStorage.getItem(TOKEN_KEY);
 export const setAuthToken = (token: string) => localStorage.setItem(TOKEN_KEY, token);
 export const removeAuthToken = () => localStorage.removeItem(TOKEN_KEY);
@@ -724,7 +724,7 @@ export const RealApiClient = {
       const ws = new WebSocket(wsUrl);
 
       ws.onopen = () => {
-        console.log(`[WebSocket] Conectado ao servidor ALICERCE em: ${wsUrl}`);
+        console.log(`[WebSocket] Conectado ao servidor Ballast em: ${wsUrl}`);
       };
 
       ws.onmessage = (event) => {

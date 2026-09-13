@@ -143,7 +143,7 @@ export const FeedView: React.FC<FeedViewProps> = ({
           borderRadius: '12px'
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 700, fontSize: '12.5px', color: '#0F172A', marginBottom: '4px' }}>
-            <Cpu size={14} color="#2563EB" /> Algoritmo de Relevância Técnica ALICERCE
+            <Cpu size={14} color="#2563EB" /> Algoritmo de Relevância Técnica Ballast
           </div>
           <p style={{ fontSize: '12px', color: '#475569', lineHeight: 1.5, marginBottom: '10px' }}>
             O feed classifica publicações calculando a pontuação por: <strong>ART/RRT registrada</strong> (+50 pts), <strong>chancela profissional</strong> (+25 pts), <strong>proximidade geográfica</strong> ({currentUser.city || 'São Paulo'}/{currentUser.state || 'SP'}) e engajamento técnico de propostas.

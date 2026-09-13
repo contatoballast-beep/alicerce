@@ -58,8 +58,8 @@ export const ProfileDetailModal: React.FC<ProfileDetailModalProps> = ({
     if (navigator.share) {
       try {
         await navigator.share({
-          title: `${profile.name} - ALICERCE`,
-          text: `Confira o perfil de ${profile.name} na plataforma ALICERCE:`,
+          title: `${profile.name} - Ballast`,
+          text: `Confira o perfil de ${profile.name} na plataforma Ballast:`,
           url,
         });
       } catch (err) {
@@ -76,7 +76,7 @@ export const ProfileDetailModal: React.FC<ProfileDetailModalProps> = ({
     const rawNumber = profile.whatsapp || profile.phone || '5511987654321';
     const cleanNumber = rawNumber.replace(/\D/g, '');
     const fullNumber = cleanNumber.startsWith('55') ? cleanNumber : `55${cleanNumber}`;
-    const text = encodeURIComponent(`Olá ${profile.name}, encontrei seu perfil na plataforma ALICERCE e gostaria de solicitar um orçamento para minha obra.`);
+    const text = encodeURIComponent(`Olá ${profile.name}, encontrei seu perfil na plataforma Ballast e gostaria de solicitar um orçamento para minha obra.`);
     window.open(`https://wa.me/${fullNumber}?text=${text}`, '_blank');
   };
 
@@ -92,7 +92,7 @@ export const ProfileDetailModal: React.FC<ProfileDetailModalProps> = ({
       targetUserId: profile.id,
       rating: newRating,
       comment: newComment,
-      contractType: 'Serviço ALICERCE'
+      contractType: 'Serviço Ballast'
     });
 
     const updatedReviews = await RealApiClient.getReviews(profile.id);

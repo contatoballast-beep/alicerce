@@ -102,7 +102,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   ];
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={mode === 'login' ? 'Entrar no ALICERCE' : 'Criar Nova Conta'} maxWidth="460px">
+    <Modal isOpen={isOpen} onClose={onClose} title={mode === 'login' ? 'Entrar no Ballast' : 'Criar Nova Conta'} maxWidth="460px">
       
       {/* Mode Switcher Segments */}
       <div style={{

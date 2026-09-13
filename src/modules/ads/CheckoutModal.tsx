@@ -21,7 +21,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
   if (!campaign) return null;
 
-  const pixCode = campaign.pixCopiaCola || campaign.pixCopiaECola || `00020126580014BR.GOV.BCB.PIX0136alicerce-pay@bancopix.com.br520400005303986540${campaign.totalBudget.toFixed(2)}5802BR5916ALICERCE ADS6009SAO PAULO62070503***6304`;
+  const pixCode = campaign.pixCopiaCola || campaign.pixCopiaECola || `00020126580014BR.GOV.BCB.PIX0136Ballast-pay@bancopix.com.br520400005303986540${campaign.totalBudget.toFixed(2)}5802BR5916Ballast ADS6009SAO PAULO62070503***6304`;
 
   const handleCopyPix = () => {
     navigator.clipboard.writeText(pixCode);
@@ -140,7 +140,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
             Pagamento Pix Recebido!
           </h3>
           <p style={{ fontSize: '13px', color: 'var(--text-body)', maxWidth: '380px', margin: '0 auto 20px', lineHeight: 1.5 }}>
-            Sua campanha está <strong>ATIVA</strong> e já sendo distribuída no Feed e no Catálogo ALICERCE.
+            Sua campanha está <strong>ATIVA</strong> e já sendo distribuída no Feed e no Catálogo Ballast.
           </p>
           
           <div style={{ 
@@ -156,7 +156,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', textAlign: 'left' }}>
               <FileText size={18} color="var(--primary-color)" />
               <div>
-                <div style={{ fontSize: '12.5px', fontWeight: 700, color: 'var(--text-heading)' }}>{campaign.invoiceNfseUrl || 'NFS-e_ALICERCE_2026.pdf'}</div>
+                <div style={{ fontSize: '12.5px', fontWeight: 700, color: 'var(--text-heading)' }}>{campaign.invoiceNfseUrl || 'NFS-e_Ballast_2026.pdf'}</div>
                 <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Nota Fiscal Eletrônica Emitida com Sucesso</div>
               </div>
             </div>

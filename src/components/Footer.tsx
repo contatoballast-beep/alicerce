@@ -42,7 +42,7 @@ export const Footer: React.FC<FooterProps> = ({ onOpenLGPD, onOpenSwagger }) => 
             A
           </div>
           <span style={{ fontWeight: 800, fontSize: '14px', letterSpacing: '-0.02em', color: 'var(--text-heading)' }}>
-            ALICERCE
+            Ballast
           </span>
           <span style={{ fontSize: '12px', color: 'var(--text-muted)', borderLeft: '1px solid var(--border-color)', paddingLeft: '10px', marginLeft: '2px' }}>
             Ecossistema Técnico da Construção Civil
@@ -93,7 +93,7 @@ export const Footer: React.FC<FooterProps> = ({ onOpenLGPD, onOpenSwagger }) => 
 
         <div style={{ fontSize: '12px', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '6px' }}>
           <ShieldCheck size={14} color="#10B981" />
-          <span>© 2026 ALICERCE — Feito para quem constrói o Brasil.</span>
+          <span>© 2026 Ballast — Feito para quem constrói o Brasil.</span>
         </div>
       </div>
     </footer>

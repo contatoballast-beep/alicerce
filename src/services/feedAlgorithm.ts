@@ -8,7 +8,7 @@ export interface RankedPost extends Post {
 }
 
 /**
- * ALICERCE Technical Relevance Ranking Engine
+ * Ballast Technical Relevance Ranking Engine
  * Formula: Score = S_stamp + S_engagement + S_freshness + S_geo + S_affinity + S_ad_boost
  */
 export function rankFeedPosts(
@@ -105,7 +105,7 @@ export function rankFeedPosts(
       break;
   }
 
-  // 3. Organic Injection of Active ALICERCE Ads Campaigns (every 4-5 items)
+  // 3. Organic Injection of Active Ballast Ads Campaigns (every 4-5 items)
   const paidCampaigns = activeCampaigns.filter(c => c.status === 'ativa');
   if (paidCampaigns.length === 0) return sorted;
 
@@ -124,7 +124,7 @@ export function rankFeedPosts(
         authorName: camp.title,
         authorAvatar: 'https://images.unsplash.com/photo-1541888946425-d0fbb186a5b7?w=150&auto=format&fit=crop&q=80',
         authorRole: 'fornecedor',
-        authorBadge: 'Anunciante Verificado • ALICERCE Ads',
+        authorBadge: 'Anunciante Verificado • Ballast Ads',
         category: 'patrocinado',
         title: `[PATROCINADO] ${camp.title}`,
         content: `Campanha ativa direcionada para ${camp.targetRegion}. Objetivo: ${camp.objective}. Clique no botão abaixo para entrar em contato ou solicitar cotação direta.`,
@@ -138,7 +138,7 @@ export function rankFeedPosts(
         isSponsored: true,
         createdAt: 'Agora mesmo',
         algorithmScore: 999,
-        rankingReason: `⚡ Patrocinado • ALICERCE Ads (${camp.targetRegion})`
+        rankingReason: `⚡ Patrocinado • Ballast Ads (${camp.targetRegion})`
       };
       resultWithAds.push(adPost);
       adIndex++;

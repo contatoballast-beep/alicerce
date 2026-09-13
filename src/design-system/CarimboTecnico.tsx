@@ -72,7 +72,7 @@ export const CarimboTecnico: React.FC<CarimboTecnicoProps> = ({ stamp, compact =
             <ShieldCheck size={12} />
           </div>
           <span style={{ fontSize: '11.5px', fontWeight: 700, color: '#0F172A', letterSpacing: '-0.01em' }}>
-            Chancela Técnica Verificada ALICERCE
+            Chancela Técnica Verificada Ballast
           </span>
         </div>
 

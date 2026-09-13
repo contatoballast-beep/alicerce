@@ -1,21 +1,21 @@
 export const SWAGGER_SPEC = {
   openapi: "3.0.3",
   info: {
-    title: "ALICERCE API - B2B2C Construction Ecosystem",
-    description: "API RESTful documentada para a plataforma ALICERCE. Suporta autenticação RBAC com chancela de registros CREA/CAU/CNPJ, feed técnico, mensageria em tempo real e gateway de anúncios.",
+    title: "Ballast API - B2B2C Construction Ecosystem",
+    description: "API RESTful documentada para a plataforma Ballast. Suporta autenticação RBAC com chancela de registros CREA/CAU/CNPJ, feed técnico, mensageria em tempo real e gateway de anúncios.",
     version: "1.0.0",
     contact: {
-      name: "Equipe de Engenharia ALICERCE",
-      email: "api@alicerce.com.br"
+      name: "Equipe de Engenharia Ballast",
+      email: "api@Ballast.com.br"
     }
   },
   servers: [
     {
-      url: "https://api.alicerce.com.br/v1",
+      url: "https://api.Ballast.com.br/v1",
       description: "Servidor de Produção (AWS / Kubernetes)"
     },
     {
-      url: "https://staging-api.alicerce.com.br/v1",
+      url: "https://staging-api.Ballast.com.br/v1",
       description: "Servidor de Staging / Homologação"
     }
   ],
@@ -33,7 +33,7 @@ export const SWAGGER_SPEC = {
         properties: {
           id: { type: "string", example: "usr_8829" },
           name: { type: "string", example: "Eng. Roberto Silva" },
-          email: { type: "string", example: "roberto@alicerce.com.br" },
+          email: { type: "string", example: "roberto@Ballast.com.br" },
           role: { type: "string", enum: ["pessoa_fisica", "profissional_crea", "profissional_cau", "empresa_cnpj", "investidor", "admin"] },
           creaCauNumber: { type: "string", example: "CREA-SP 5069824/D" },
           verified: { type: "boolean", example: true }

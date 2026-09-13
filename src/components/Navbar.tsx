@@ -94,29 +94,24 @@ export const Navbar: React.FC<NavbarProps> = ({
         gap: '20px'
       }}>
         
-        {/* Left: Brand Monogram & Name */}
+        {/* Left: Ballast Logo */}
         <div 
-          style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '9px', flexShrink: 0 }} 
+          style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }} 
           onClick={() => handleNavClick('feed')}
         >
-          <div style={{
-            width: '28px',
-            height: '28px',
-            background: '#2563EB',
-            borderRadius: '6px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: '#FFFFFF',
-            fontWeight: 900,
-            fontSize: '15px',
-            letterSpacing: '-0.02em',
-            boxShadow: '0 2px 4px rgba(37, 99, 235, 0.2)'
-          }}>
-            A
-          </div>
-          <span style={{ fontSize: '16px', letterSpacing: '-0.02em', fontWeight: 800, color: '#0F172A' }}>
-            ALICERCE
+          <img
+            src="/ballast-logo.jpg"
+            alt="Ballast Archtechture"
+            style={{
+              height: '36px',
+              width: '36px',
+              borderRadius: '8px',
+              objectFit: 'cover',
+              boxShadow: '0 2px 6px rgba(74,144,184,0.25)',
+            }}
+          />
+          <span style={{ fontSize: '16px', letterSpacing: '-0.01em', fontWeight: 800, color: '#0F172A' }}>
+            Ballast
           </span>
         </div>
 

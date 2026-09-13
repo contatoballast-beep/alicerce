@@ -93,15 +93,14 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth, onEnterApp
         height: 58,
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
-          <div style={{
-            width: 28, height: 28, background: '#2563EB', borderRadius: 6,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            color: '#fff', fontWeight: 900, fontSize: 15, letterSpacing: '-0.02em',
-            boxShadow: '0 2px 4px rgba(37,99,235,0.2)',
-          }}>A</div>
-          <span style={{ fontSize: 16, fontWeight: 800, color: 'var(--ink)', letterSpacing: '-0.02em' }}>
-            ALICERCE
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <img
+            src="/ballast-logo.jpg"
+            alt="Ballast Archtechture"
+            style={{ height: 36, width: 36, borderRadius: 8, objectFit: 'cover', boxShadow: '0 2px 6px rgba(74,144,184,0.25)' }}
+          />
+          <span style={{ fontSize: 16, fontWeight: 800, color: 'var(--ink)', letterSpacing: '-0.01em' }}>
+            Ballast
           </span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -419,7 +418,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth, onEnterApp
         textAlign: 'center', color: '#475569', fontSize: 12,
         borderTop: '1px solid rgba(255,255,255,0.05)',
       }}>
-        <span style={{ fontWeight: 800, color: '#64748B' }}>ALICERCE</span>
+        <span style={{ fontWeight: 800, color: '#64748B' }}>Ballast</span>
         {' · '}© {new Date().getFullYear()} · Plataforma digital da construção civil brasileira
       </footer>
     </div>

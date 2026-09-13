@@ -68,7 +68,7 @@ export const PostCard: React.FC<PostCardProps> = ({
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#1D4ED8', fontSize: '11.5px', fontWeight: 700 }}>
             <Zap size={14} fill="#1D4ED8" />
-            <span>ALICERCE ADS • DESTAQUE PATROCINADO</span>
+            <span>Ballast ADS • DESTAQUE PATROCINADO</span>
           </div>
           <span style={{ fontSize: '10.5px', color: '#1E40AF', background: 'rgba(255,255,255,0.8)', padding: '2px 8px', borderRadius: '9999px', fontWeight: 700 }}>
             Prioridade Máxima

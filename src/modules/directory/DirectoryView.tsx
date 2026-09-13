@@ -68,7 +68,7 @@ export const DirectoryView: React.FC<DirectoryViewProps> = ({
     const rawNumber = item.whatsapp || item.phone || '5511987654321';
     const cleanNumber = rawNumber.replace(/\D/g, '');
     const fullNumber = cleanNumber.startsWith('55') ? cleanNumber : `55${cleanNumber}`;
-    const text = encodeURIComponent(`Olá ${item.name}, encontrei seu perfil no ecossistema ALICERCE e gostaria de solicitar um orçamento para minha obra.`);
+    const text = encodeURIComponent(`Olá ${item.name}, encontrei seu perfil no ecossistema Ballast e gostaria de solicitar um orçamento para minha obra.`);
     window.open(`https://wa.me/${fullNumber}?text=${text}`, '_blank');
   };
 

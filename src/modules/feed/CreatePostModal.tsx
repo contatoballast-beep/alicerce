@@ -35,7 +35,7 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
       ? `Arquiteto · ${currentUser.creaCauNumber}`
       : currentUser.role === 'empresa_cnpj'
       ? `Incorporadora · ${currentUser.cnpjNumber}`
-      : 'Membro ALICERCE';
+      : 'Membro Ballast';
 
     onSubmitPost({
       authorId: currentUser.id,
