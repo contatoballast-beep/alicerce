@@ -44,6 +44,7 @@ import { AdsCampaignView } from './modules/ads/AdsCampaignView';
 import { AdminDashboardView } from './modules/admin/AdminDashboardView';
 import { SwaggerSpecView } from './modules/admin/SwaggerSpecView';
 import { ConstructionChecklistView } from './modules/checklist/ConstructionChecklistView';
+import { LandingPage } from './modules/landing/LandingPage';
 
 export const App: React.FC = () => {
   // Main State
@@ -65,6 +66,18 @@ export const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<string>('feed');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [serverOnline, setServerOnline] = useState<boolean | null>(null);
+
+  const isGuest = !currentUser || currentUser.id === 'usr_guest';
+  // Show landing page for guests unless they explicitly chose to enter the app
+  const [showLanding, setShowLanding] = useState<boolean>(() => {
+    const stored = localStorage.getItem('alicerce_entered_app');
+    return !stored; // show landing if never entered before
+  });
+
+  const handleEnterApp = () => {
+    localStorage.setItem('alicerce_entered_app', '1');
+    setShowLanding(false);
+  };
 
   // Modal Control States
   const [authModalOpen, setAuthModalOpen] = useState(false);
@@ -328,11 +341,44 @@ export const App: React.FC = () => {
     };
     LocalApiService.updateUser(guestUser);
     setCurrentUser(guestUser);
+    // After logout, show landing again
+    localStorage.removeItem('alicerce_entered_app');
+    setShowLanding(true);
+    setActiveTab('feed');
     showToast("Você saiu da sua conta.");
   };
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+
+      {/* ── LANDING PAGE (shown to guests who haven't entered the app yet) ── */}
+      {isGuest && showLanding && (
+        <>
+          <LandingPage
+            onOpenAuth={(mode) => {
+              setAuthModalMode(mode);
+              setAuthModalOpen(true);
+            }}
+            onEnterApp={handleEnterApp}
+          />
+          <AuthModal
+            isOpen={authModalOpen}
+            initialMode={authModalMode}
+            onClose={() => setAuthModalOpen(false)}
+            onLoginSuccess={(u) => {
+              setCurrentUser(u);
+              setShowLanding(false);
+              localStorage.setItem('alicerce_entered_app', '1');
+              showToast(`Bem-vindo, ${u.name}! Autenticado com sucesso.`);
+            }}
+          />
+        </>
+      )}
+
+      {/* ── MAIN APP ── */}
+      {(!isGuest || !showLanding) && (
+        <>
+      
       
       {/* Toast Notification Banner */}
       {toastMessage && (
@@ -482,14 +528,27 @@ export const App: React.FC = () => {
           <SwaggerSpecView />
         )}
 
-        {activeTab === 'checklist' && (
+        {activeTab === 'checklist' && !isGuest && (
           <ConstructionChecklistView />
+        )}
+
+        {activeTab === 'checklist' && isGuest && (
+          // Guard: redirect guest to feed and prompt login
+          <>{(() => {
+            setTimeout(() => {
+              setActiveTab('feed');
+              setAuthModalMode('login');
+              setAuthModalOpen(true);
+              showToast('Faça login para acessar o Checklist de Obra.');
+            }, 0);
+            return null;
+          })()}</>
         )}
 
       </main>
 
       {/* Footer */}
-      <Footer 
+      <Footer
         onOpenLGPD={() => setLgpdModalOpen(true)}
         onOpenSwagger={() => setActiveTab('swagger')}
       />
@@ -587,6 +646,8 @@ export const App: React.FC = () => {
         onConfirmPayment={handleConfirmPayment}
       />
 
+        </>
+      )}
     </div>
   );
 };

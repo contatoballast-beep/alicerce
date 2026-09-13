@@ -70,7 +70,8 @@ export const Navbar: React.FC<NavbarProps> = ({
     { id: 'opportunities', label: 'Demandas', icon: Briefcase },
     { id: 'quotes', label: 'Cotações', icon: Truck },
     { id: 'timeline', label: 'Diário', icon: HardHat },
-    { id: 'checklist', label: 'Obra', icon: ClipboardList },
+    // "Obra" only visible to logged-in users
+    ...(!isGuest ? [{ id: 'checklist', label: 'Obra', icon: ClipboardList }] : []),
   ];
 
   return (
