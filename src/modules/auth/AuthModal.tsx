@@ -30,7 +30,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [creaCau, setCreaCau] = useState('');
+  const [hasCreaCau, setHasCreaCau] = useState<boolean | null>(null);
   const [cnpj, setCnpj] = useState('');
   const [phone, setPhone] = useState('');
   const [city, setCity] = useState('São Paulo');
@@ -54,7 +54,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       email,
       password,
       role: selectedRole,
-      creaCauNumber: creaCau || (selectedRole.includes('crea') ? 'CREA-SP 5099812/D' : undefined),
+      creaCauNumber: hasCreaCau ? 'Sim' : undefined,
       cnpjNumber: cnpj || (selectedRole === 'empresa_cnpj' ? '12.345.678/0001-90' : undefined),
       phone,
       whatsapp: phone,
@@ -339,29 +339,63 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-            <div>
-              <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
-                {selectedRole.includes('crea') || selectedRole.includes('cau') ? 'Registro CREA / CAU' : 'CNPJ da Empresa'}
-              </label>
-              <input 
-                type="text" 
-                placeholder={selectedRole.includes('crea') ? 'CREA-SP 123456/D' : '12.345.678/0001-90'} 
-                value={selectedRole.includes('crea') || selectedRole.includes('cau') ? creaCau : cnpj} 
-                onChange={e => selectedRole.includes('crea') || selectedRole.includes('cau') ? setCreaCau(e.target.value) : setCnpj(e.target.value)} 
-                style={{
-                  width: '100%',
-                  height: '40px',
-                  padding: '0 12px',
-                  border: '1.5px solid #CBD5E1',
-                  borderRadius: '8px',
-                  fontSize: '13px',
-                  fontFamily: 'var(--font-mono)',
-                  background: '#FFFFFF',
-                  color: '#0F172A',
-                  outline: 'none'
-                }}
-              />
-            </div>
+            {/* CREA/CAU: Sim ou Não */}
+            {(selectedRole === 'profissional_crea' || selectedRole === 'profissional_cau') && (
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#334155', marginBottom: '6px' }}>
+                  Possui registro CREA / CAU?
+                </label>
+                <div style={{ display: 'flex', gap: 6 }}>
+                  <button
+                    type="button"
+                    onClick={() => setHasCreaCau(true)}
+                    style={{
+                      flex: 1, height: 40, borderRadius: 8, border: 'none',
+                      fontWeight: 700, fontSize: 13, cursor: 'pointer',
+                      background: hasCreaCau === true ? '#059669' : '#F1F5F9',
+                      color: hasCreaCau === true ? '#fff' : '#475569',
+                      transition: 'all 0.15s',
+                    }}
+                  >
+                    ✓ Sim
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setHasCreaCau(false)}
+                    style={{
+                      flex: 1, height: 40, borderRadius: 8, border: 'none',
+                      fontWeight: 700, fontSize: 13, cursor: 'pointer',
+                      background: hasCreaCau === false ? '#DC2626' : '#F1F5F9',
+                      color: hasCreaCau === false ? '#fff' : '#475569',
+                      transition: 'all 0.15s',
+                    }}
+                  >
+                    ✗ Não
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* CNPJ for companies */}
+            {selectedRole === 'empresa_cnpj' && (
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
+                  CNPJ da Empresa
+                </label>
+                <input
+                  type="text"
+                  placeholder="12.345.678/0001-90"
+                  value={cnpj}
+                  onChange={e => setCnpj(e.target.value)}
+                  style={{
+                    width: '100%', height: '40px', padding: '0 12px',
+                    border: '1.5px solid #CBD5E1', borderRadius: '8px',
+                    fontSize: '13px', fontFamily: 'var(--font-mono)',
+                    background: '#FFFFFF', color: '#0F172A', outline: 'none'
+                  }}
+                />
+              </div>
+            )}
 
             <div>
               <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
@@ -374,15 +408,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 onChange={e => setPhone(e.target.value)}
                 required
                 style={{
-                  width: '100%',
-                  height: '40px',
-                  padding: '0 12px',
-                  border: '1.5px solid #CBD5E1',
-                  borderRadius: '8px',
-                  fontSize: '13.5px',
-                  background: '#FFFFFF',
-                  color: '#0F172A',
-                  outline: 'none'
+                  width: '100%', height: '40px', padding: '0 12px',
+                  border: '1.5px solid #CBD5E1', borderRadius: '8px',
+                  fontSize: '13.5px', background: '#FFFFFF', color: '#0F172A', outline: 'none'
                 }}
               />
             </div>
