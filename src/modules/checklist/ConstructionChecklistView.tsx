@@ -16,7 +16,7 @@ interface ConstructionProject {
   createdAt: string;
 }
 
-const STORAGE_KEY = 'alicerce_checklist_v1';
+const STORAGE_KEY = 'ballast_checklist_v1';
 
 const loadProjects = (): ConstructionProject[] => {
   try {

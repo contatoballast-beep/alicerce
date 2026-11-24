@@ -1,312 +1,84 @@
-import { UserProfile, Post, Opportunity, Proposal, ConstructionProject, ChatMessage, ChatThread, AdCampaign, ModerationItem } from '../types';
-import { INITIAL_USER, MOCK_POSTS, MOCK_OPPORTUNITIES, MOCK_PROJECTS, MOCK_CHAT_THREADS, MOCK_MESSAGES, MOCK_CAMPAIGNS, MOCK_MODERATION } from './mockData';
+import { UserProfile, ConstructionProject, ClientBriefing, ProfessionalProfile } from '../types';
 
-const STORAGE_KEYS = {
-  USER: 'Ballast_user',
-  POSTS: 'Ballast_posts',
-  OPPORTUNITIES: 'Ballast_opportunities',
-  PROJECTS: 'Ballast_projects',
-  CAMPAIGNS: 'Ballast_campaigns',
-  MESSAGES: 'Ballast_messages',
-  THREADS: 'Ballast_chat_threads',
-  MODERATION: 'Ballast_moderation',
+export const GUEST_USER: UserProfile = {
+  id: 'usr_guest',
+  name: 'Visitante',
+  email: '',
+  role: 'cliente',
+  avatar: '',
+  city: '',
+  state: '',
+  verified: false,
+  verificationStatus: 'unverified',
+  consentLgpd: false,
+  createdAt: '',
 };
 
-// Helper for LocalStorage initialization
-function getStored<T>(key: string, defaultValue: T): T {
+const STORAGE_KEYS = {
+  BRIEFING: 'ballast_client_briefing_v1',
+  COMPARE: 'ballast_compare_list_v1',
+  PROJECTS: 'ballast_timeline_projects_v1',
+};
+
+function getStored<T>(key: string, fallback: T): T {
   try {
-    const data = localStorage.getItem(key);
-    return data ? JSON.parse(data) : defaultValue;
-  } catch (err) {
-    console.error(`Error reading ${key} from LocalStorage`, err);
-    return defaultValue;
+    const raw = localStorage.getItem(key);
+    return raw ? (JSON.parse(raw) as T) : fallback;
+  } catch {
+    return fallback;
   }
 }
 
 function setStored<T>(key: string, value: T): void {
   try {
     localStorage.setItem(key, JSON.stringify(value));
-  } catch (err) {
-    console.error(`Error writing ${key} to LocalStorage`, err);
-  }
+  } catch {}
 }
 
-export const LocalApiService = {
-  // User Profile & Auth
-  getUser(): UserProfile {
-    return getStored<UserProfile>(STORAGE_KEYS.USER, INITIAL_USER);
+export const LocalPreferencesService = {
+  getBriefing(): ClientBriefing | null {
+    return getStored<ClientBriefing | null>(STORAGE_KEYS.BRIEFING, null);
   },
 
-  updateUser(updated: Partial<UserProfile>): UserProfile {
-    const current = this.getUser();
-    const newProfile = { ...current, ...updated };
-    setStored(STORAGE_KEYS.USER, newProfile);
-    return newProfile;
+  saveBriefing(briefing: ClientBriefing): void {
+    setStored(STORAGE_KEYS.BRIEFING, briefing);
   },
 
-  switchRole(role: UserProfile['role']): UserProfile {
-    const current = this.getUser();
-    let creaCau = current.creaCauNumber;
-    let cnpj = current.cnpjNumber;
-    let name = current.name;
-
-    if (role === 'profissional_crea') {
-      name = 'Eng. Roberto Silva';
-      creaCau = 'CREA-SP 5069824/D';
-    } else if (role === 'profissional_cau') {
-      name = 'Arq. Roberto Silva';
-      creaCau = 'CAU A88291-0';
-    } else if (role === 'empresa_cnpj') {
-      name = 'Silva & Associados Engenharia LTDA';
-      cnpj = '33.910.402/0001-12';
-    } else if (role === 'investidor') {
-      name = 'Roberto Silva (Investimentos Imobiliários)';
-    }
-
-    return this.updateUser({ role, name, creaCauNumber: creaCau, cnpjNumber: cnpj });
+  clearBriefing(): void {
+    localStorage.removeItem(STORAGE_KEYS.BRIEFING);
   },
 
-  // Feed Posts
-  getPosts(): Post[] {
-    const raw = getStored<Post[]>(STORAGE_KEYS.POSTS, []);
-    const clean = raw.filter(p => !['post_1', 'post_2', 'post_3'].includes(p.id));
-    if (clean.length !== raw.length) {
-      setStored(STORAGE_KEYS.POSTS, clean);
-    }
-    return clean;
+  getCompareList(): ProfessionalProfile[] {
+    return getStored<ProfessionalProfile[]>(STORAGE_KEYS.COMPARE, []);
   },
 
-  addPost(postData: Omit<Post, 'id' | 'createdAt' | 'likesCount' | 'commentsCount' | 'proposalsCount'>): Post {
-    const posts = this.getPosts();
-    const user = this.getUser();
-    
-    // Auto-stamp generation
-    const hash = Math.random().toString(36).substring(2) + Date.now().toString(36);
-    const newPost: Post = {
-      ...postData,
-      id: `post_${Date.now()}`,
-      likesCount: 0,
-      commentsCount: 0,
-      proposalsCount: 0,
-      createdAt: 'Agora mesmo',
-      technicalStamp: {
-        stampId: `ALC-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`,
-        registrationNumber: user.creaCauNumber || user.cnpjNumber || 'CPF VERIFICADO',
-        issueDate: new Date().toLocaleString('pt-BR'),
-        hashVerification: hash,
-        artRrtCode: user.creaCauNumber ? `ART SP${new Date().getFullYear()}/${Math.floor(100000 + Math.random() * 900000)}` : undefined,
-        status: 'valid',
-      },
-    };
-
-    const updated = [newPost, ...posts];
-    setStored(STORAGE_KEYS.POSTS, updated);
-    return newPost;
+  saveCompareList(items: ProfessionalProfile[]): void {
+    setStored(STORAGE_KEYS.COMPARE, items.slice(0, 3));
   },
 
-  toggleLikePost(postId: string): Post[] {
-    const posts = this.getPosts().map(post => {
-      if (post.id === postId) {
-        const isLiked = !post.isLiked;
-        return {
-          ...post,
-          isLiked,
-          likesCount: isLiked ? post.likesCount + 1 : post.likesCount - 1,
-        };
-      }
-      return post;
-    });
-    setStored(STORAGE_KEYS.POSTS, posts);
-    return posts;
+  getTimelineProjects(): ConstructionProject[] {
+    return getStored<ConstructionProject[]>(STORAGE_KEYS.PROJECTS, []);
   },
 
-  // Opportunities & Proposals
-  getOpportunities(): Opportunity[] {
-    const raw = getStored<Opportunity[]>(STORAGE_KEYS.OPPORTUNITIES, []);
-    const clean = raw.filter(o => !['opp_1', 'opp_2'].includes(o.id));
-    if (clean.length !== raw.length) {
-      setStored(STORAGE_KEYS.OPPORTUNITIES, clean);
-    }
-    return clean;
-  },
-
-  addOpportunity(oppData: Omit<Opportunity, 'id' | 'createdAt' | 'proposalsCount' | 'proposals' | 'status'>): Opportunity {
-    const opps = this.getOpportunities();
-    const newOpp: Opportunity = {
-      ...oppData,
-      id: `opp_${Date.now()}`,
-      status: 'aberto',
-      proposalsCount: 0,
-      proposals: [],
-      createdAt: 'Hoje',
-    };
-    const updated = [newOpp, ...opps];
-    setStored(STORAGE_KEYS.OPPORTUNITIES, updated);
-    return newOpp;
-  },
-
-  addProposal(oppId: string, proposalData: Omit<Proposal, 'id' | 'opportunityId' | 'createdAt' | 'status'>): Opportunity[] {
-    const user = this.getUser();
-    const opps = this.getOpportunities().map(opp => {
-      if (opp.id === oppId) {
-        const newProp: Proposal = {
-          ...proposalData,
-          id: `prop_${Date.now()}`,
-          opportunityId: oppId,
-          proposerId: user.id,
-          proposerName: user.name,
-          proposerRole: user.role,
-          proposerAvatar: user.avatar,
-          creaCau: user.creaCauNumber,
-          status: 'em_negociacao',
-          createdAt: 'Agora mesmo',
-        };
-        return {
-          ...opp,
-          proposalsCount: opp.proposalsCount + 1,
-          proposals: [newProp, ...opp.proposals],
-        };
-      }
-      return opp;
-    });
-    setStored(STORAGE_KEYS.OPPORTUNITIES, opps);
-    return opps;
-  },
-
-  // Construction Projects
-  getProjects(): ConstructionProject[] {
-    const raw = getStored<ConstructionProject[]>(STORAGE_KEYS.PROJECTS, []);
-    const clean = raw.filter(p => !['proj_1'].includes(p.id));
-    if (clean.length !== raw.length) {
-      setStored(STORAGE_KEYS.PROJECTS, clean);
-    }
-    return clean;
-  },
-
-  addProject(projectData: Omit<ConstructionProject, 'id' | 'milestones'>): ConstructionProject {
-    const projects = this.getProjects();
-    const newProj: ConstructionProject = {
-      ...projectData,
-      id: `proj_${Date.now()}`,
-      milestones: [],
-    };
-    const updated = [newProj, ...projects];
-    setStored(STORAGE_KEYS.PROJECTS, updated);
-    return newProj;
-  },
-
-  updateProjects(projects: ConstructionProject[]): void {
+  saveTimelineProjects(projects: ConstructionProject[]): void {
     setStored(STORAGE_KEYS.PROJECTS, projects);
   },
 
-  // Ads Campaigns
-  getCampaigns(): AdCampaign[] {
-    return getStored<AdCampaign[]>(STORAGE_KEYS.CAMPAIGNS, MOCK_CAMPAIGNS);
-  },
-
-  addCampaign(campData: Omit<AdCampaign, 'id' | 'createdAt' | 'impressionsCount' | 'clicksCount' | 'status'>): AdCampaign {
-    const campaigns = this.getCampaigns();
-    const user = this.getUser();
-    
-    // Simulating Pix QR Code & CopyPaste String
-    const randomHash = Math.random().toString(36).substring(2, 12).toUpperCase();
-    const pixCode = `00020126580014BR.GOV.BCB.PIX0136Ballast-pay@bancopix.com.br520400005303986540${campData.totalBudget.toFixed(2)}5802BR5916Ballast ADS SAO PAULO6009SAO PAULO62070503***6304${randomHash}`;
-
-    const newCamp: AdCampaign = {
-      ...campData,
-      id: `camp_${Date.now()}`,
-      userId: user.id,
-      impressionsCount: 0,
-      clicksCount: 0,
-      status: 'ativa',
-      pixQrCode: `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(pixCode)}`,
-      pixCopiaECola: pixCode,
-      invoiceNfseUrl: `NFS-e_Ballast_${Math.floor(100000 + Math.random() * 900000)}.pdf`,
-      createdAt: new Date().toLocaleDateString('pt-BR'),
-    };
-
-    const updated = [newCamp, ...campaigns];
-    setStored(STORAGE_KEYS.CAMPAIGNS, updated);
-    return newCamp;
-  },
-
-  // Chat Messages & Threads
-  getChatThreads(): ChatThread[] {
-    return getStored<ChatThread[]>(STORAGE_KEYS.THREADS, []);
-  },
-
-  createOrGetThread(participant: { id: string; name: string; role?: string; avatar?: string }): ChatThread {
-    const threads = this.getChatThreads();
-    const existing = threads.find(t => t.participantId === participant.id);
-    if (existing) return existing;
-
-    const newThread: ChatThread = {
-      id: `thread_${Date.now()}`,
-      participantId: participant.id,
-      participantName: participant.name,
-      participantAvatar: participant.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-      participantRole: participant.role || 'Profissional',
-      lastMessage: '',
-      lastMessageTime: 'Agora',
-      unreadCount: 0,
-    };
-
-    const updated = [newThread, ...threads];
-    setStored(STORAGE_KEYS.THREADS, updated);
-    return newThread;
-  },
-
-  getMessages(threadId: string): ChatMessage[] {
-    const allMsgs = getStored<Record<string, ChatMessage[]>>(STORAGE_KEYS.MESSAGES, {});
-    return allMsgs[threadId] || [];
-  },
-
-  sendMessage(threadId: string, text: string, attachmentUrl?: string, receiverId?: string): ChatMessage {
-    const user = this.getUser();
-    const allMsgs = getStored<Record<string, ChatMessage[]>>(STORAGE_KEYS.MESSAGES, {});
-    const currentMsgs = allMsgs[threadId] || [];
-    
-    const timestamp = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-    const newMsg: ChatMessage = {
-      id: `msg_${Date.now()}`,
-      threadId,
-      senderId: user.id,
-      senderName: user.name,
-      receiverId: receiverId || 'usr_participant',
-      text,
-      attachmentUrl,
-      timestamp,
-      read: true,
-    };
-
-    allMsgs[threadId] = [...currentMsgs, newMsg];
-    setStored(STORAGE_KEYS.MESSAGES, allMsgs);
-
-    // Update last message in thread
-    const threads = this.getChatThreads();
-    const updatedThreads = threads.map(t => {
-      if (t.id === threadId) {
-        return {
-          ...t,
-          lastMessage: text,
-          lastMessageTime: timestamp,
-        };
-      }
-      return t;
-    });
-    setStored(STORAGE_KEYS.THREADS, updatedThreads);
-
-    return newMsg;
-  },
-
-  // Moderation
-  getModerationQueue(): ModerationItem[] {
-    return getStored<ModerationItem[]>(STORAGE_KEYS.MODERATION, MOCK_MODERATION);
-  },
-
-  resolveModerationItem(itemId: string, status: 'aprovado' | 'removido'): ModerationItem[] {
-    const items = this.getModerationQueue().map(item => item.id === itemId ? { ...item, status } : item);
-    setStored(STORAGE_KEYS.MODERATION, items);
-    return items;
+  clearLegacyCaches(): void {
+    const legacyKeys = [
+      'Ballast_user',
+      'Ballast_posts',
+      'Ballast_opportunities',
+      'Ballast_projects',
+      'Ballast_campaigns',
+      'Ballast_messages',
+      'Ballast_chat_threads',
+      'Ballast_moderation',
+      'Ballast_jwt_token',
+      'Ballast_entered_app',
+    ];
+    for (const k of legacyKeys) {
+      localStorage.removeItem(k);
+    }
   },
 };

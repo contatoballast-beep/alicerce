@@ -1,101 +1,114 @@
 import React from 'react';
-import { Lock, FileCode2, ShieldCheck } from 'lucide-react';
+import { Lock, FileCode2 } from 'lucide-react';
+import { BallastLogo } from './BallastLogo';
 
 interface FooterProps {
   onOpenLGPD: () => void;
   onOpenSwagger: () => void;
+  onNavigate?: (tab: string) => void;
 }
 
-export const Footer: React.FC<FooterProps> = ({ onOpenLGPD, onOpenSwagger }) => {
+export const Footer: React.FC<FooterProps> = ({ onOpenLGPD, onOpenSwagger, onNavigate }) => {
   return (
-    <footer style={{ 
-      borderTop: '1px solid var(--border-color)', 
-      padding: '36px 24px', 
-      background: 'var(--bg-card)', 
-      marginTop: '80px',
-      color: 'var(--text-muted)'
-    }}>
-      <div style={{ 
-        maxWidth: '1200px', 
-        margin: '0 auto', 
-        display: 'flex', 
-        justifyContent: 'space-between', 
-        alignItems: 'center', 
-        flexWrap: 'wrap', 
-        gap: '20px' 
-      }}>
-        
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <div style={{
-            width: '24px',
-            height: '24px',
-            background: 'var(--primary-color)',
-            borderRadius: '6px',
+    <footer
+      style={{
+        borderTop: '1px solid var(--border-color)',
+        padding: '44px 0',
+        background: 'var(--grafite)',
+        color: '#E3E7EA',
+        marginTop: '72px',
+      }}
+    >
+      <div className="ballast-container">
+        <div
+          style={{
             display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: '#FFFFFF',
-            fontWeight: 800,
-            fontSize: '13px',
-            boxShadow: '0 2px 4px rgba(37, 99, 235, 0.25)'
-          }}>
-            A
+            justifyContent: 'space-between',
+            alignItems: 'flex-start',
+            flexWrap: 'wrap',
+            gap: '28px',
+            paddingBottom: '28px',
+            borderBottom: '1px solid rgba(255,255,255,0.1)',
+          }}
+        >
+          <div style={{ maxWidth: '340px' }}>
+            <BallastLogo variant="horizontal" surface="dark" size={24} />
+            <p style={{ fontSize: '13.5px', color: 'rgba(255,255,255,0.74)', marginTop: '14px', lineHeight: 1.6 }}>
+              Design que transforma decisões em sentido — conectando pessoas a arquitetos compatíveis com clareza,
+              sensibilidade e lastro.
+            </p>
           </div>
-          <span style={{ fontWeight: 800, fontSize: '14px', letterSpacing: '-0.02em', color: 'var(--text-heading)' }}>
-            Ballast
-          </span>
-          <span style={{ fontSize: '12px', color: 'var(--text-muted)', borderLeft: '1px solid var(--border-color)', paddingLeft: '10px', marginLeft: '2px' }}>
-            Ecossistema Técnico da Construção Civil
-          </span>
+
+          <div style={{ display: 'flex', gap: '36px', flexWrap: 'wrap' }}>
+            <div>
+              <div style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#8BBBD6', marginBottom: '12px' }}>
+                Plataforma
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {onNavigate && (
+                  <>
+                    <button type="button" onClick={() => onNavigate('directory')} style={footerLinkStyle}>
+                      Encontrar arquitetos
+                    </button>
+                    <button type="button" onClick={() => onNavigate('feed')} style={footerLinkStyle}>
+                      Explorar projetos
+                    </button>
+                    <button type="button" onClick={() => onNavigate('briefing')} style={footerLinkStyle}>
+                      Montar briefing
+                    </button>
+                    <button type="button" onClick={() => onNavigate('opportunities')} style={footerLinkStyle}>
+                      Demandas de projeto
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+
+            <div>
+              <div style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#8BBBD6', marginBottom: '12px' }}>
+                Transparência
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <button type="button" onClick={onOpenLGPD} style={footerLinkStyle}>
+                  <Lock size={13} /> Privacidade e LGPD
+                </button>
+                <button type="button" onClick={onOpenSwagger} style={footerLinkStyle}>
+                  <FileCode2 size={13} /> Documentação da API
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '24px', fontSize: '13px' }}>
-          <button 
-            type="button"
-            style={{ 
-              background: 'none', 
-              border: 'none', 
-              cursor: 'pointer', 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: '6px', 
-              color: 'var(--text-muted)',
-              fontSize: '12.5px',
-              padding: '4px 8px',
-              borderRadius: 'var(--radius-sm)',
-              transition: 'color 0.15s ease'
-            }} 
-            onClick={onOpenLGPD}
-          >
-            <Lock size={13} color="var(--primary-color)" /> Privacidade & LGPD
-          </button>
-          
-          <button 
-            type="button"
-            style={{ 
-              background: 'none', 
-              border: 'none', 
-              cursor: 'pointer', 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: '6px', 
-              color: 'var(--text-muted)',
-              fontSize: '12.5px',
-              padding: '4px 8px',
-              borderRadius: 'var(--radius-sm)',
-              transition: 'color 0.15s ease'
-            }} 
-            onClick={onOpenSwagger}
-          >
-            <FileCode2 size={13} color="var(--accent-color)" /> Documentação API REST
-          </button>
-        </div>
-
-        <div style={{ fontSize: '12px', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <ShieldCheck size={14} color="#10B981" />
-          <span>© 2026 Ballast — Feito para quem constrói o Brasil.</span>
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: '12px',
+            paddingTop: '20px',
+            fontSize: '12.5px',
+            color: 'rgba(255,255,255,0.62)',
+          }}
+        >
+          <span>© {new Date().getFullYear()} Ballast Architecture · ballastarch.com</span>
+          <span>Uma marca, duas extensões de valor: Modos de Morar & Marketplace.</span>
         </div>
       </div>
     </footer>
   );
+};
+
+const footerLinkStyle: React.CSSProperties = {
+  background: 'none',
+  border: 'none',
+  color: 'rgba(255,255,255,0.82)',
+  fontSize: '13px',
+  cursor: 'pointer',
+  padding: '2px 0',
+  textAlign: 'left',
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: '6px',
 };

@@ -1,0 +1,16 @@
+{
+  "short_name": "Ballast",
+  "name": "Ballast Architecture",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#F3F0E8",
+  "theme_color": "#2F5872",
+  "display": "standalone",
+  "description": "Ballast Architecture — Conectando pessoas que desejam construir ou reformar a arquitetos compatíveis."
+}

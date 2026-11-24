@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { ConstructionProject, ConstructionMilestone, UserProfile, TimelinePhase } from '../../types';
 import { HardHat, CheckCircle2, Clock, Plus, Building2, Calendar, DollarSign, Image as ImageIcon, MapPin, UserCheck, ShieldCheck } from 'lucide-react';
-import { LocalApiService } from '../../services/api';
+import { LocalPreferencesService } from '../../services/api';
 
 interface ConstructionTimelineViewProps {
   projects: ConstructionProject[];
@@ -10,7 +10,7 @@ interface ConstructionTimelineViewProps {
 
 export const ConstructionTimelineView: React.FC<ConstructionTimelineViewProps> = ({ projects: initialProjects, currentUser }) => {
   const [projectList, setProjectList] = useState<ConstructionProject[]>(() => {
-    const stored = LocalApiService.getProjects();
+    const stored = LocalPreferencesService.getTimelineProjects();
     return stored.length ? stored : initialProjects;
   });
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(initialProjects[0]?.id || null);
@@ -44,13 +44,13 @@ export const ConstructionTimelineView: React.FC<ConstructionTimelineViewProps> =
       totalBudget: parseFloat(projBudget) || 100000,
       overallProgress: 0,
       responsavelTecnico: projRT,
-      creaNumber: currentUser.creaCauNumber || 'CREA-SP 5069824/D',
+      creaNumber: currentUser.creaCauNumber || undefined,
       milestones: []
     };
 
     const updated = [newP, ...projectList];
     setProjectList(updated);
-    LocalApiService.updateProjects(updated);
+    LocalPreferencesService.saveTimelineProjects(updated);
     setSelectedProjectId(newP.id);
     setProjTitle('');
     setCreatingProject(false);
@@ -87,7 +87,7 @@ export const ConstructionTimelineView: React.FC<ConstructionTimelineViewProps> =
     });
 
     setProjectList(updatedList);
-    LocalApiService.updateProjects(updatedList);
+    LocalPreferencesService.saveTimelineProjects(updatedList);
     setMTitle('');
     setMDesc('');
     setAddingMilestone(false);

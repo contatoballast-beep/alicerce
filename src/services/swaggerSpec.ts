@@ -1,118 +1,71 @@
 export const SWAGGER_SPEC = {
-  openapi: "3.0.3",
+  openapi: '3.0.3',
   info: {
-    title: "Ballast API - B2B2C Construction Ecosystem",
-    description: "API RESTful documentada para a plataforma Ballast. Suporta autenticação RBAC com chancela de registros CREA/CAU/CNPJ, feed técnico, mensageria em tempo real e gateway de anúncios.",
-    version: "1.0.0",
+    title: 'Ballast Architecture API',
+    description:
+      'API REST e WebSocket da plataforma Ballast Architecture. Autenticação JWT validada no servidor, catálogo público de arquitetos e portfólios, solicitações de proposta e chat em tempo real isolado por participante.',
+    version: '2.0.0',
     contact: {
-      name: "Equipe de Engenharia Ballast",
-      email: "api@Ballast.com.br"
-    }
+      name: 'Equipe Ballast Architecture',
+      url: 'https://ballastarch.com',
+    },
   },
   servers: [
     {
-      url: "https://api.Ballast.com.br/v1",
-      description: "Servidor de Produção (AWS / Kubernetes)"
+      url: 'https://ballastarch.com/api',
+      description: 'Produção (Ballast Architecture)',
     },
-    {
-      url: "https://staging-api.Ballast.com.br/v1",
-      description: "Servidor de Staging / Homologação"
-    }
   ],
   components: {
     securitySchemes: {
       bearerAuth: {
-        type: "http",
-        scheme: "bearer",
-        bearerFormat: "JWT"
-      }
+        type: 'http',
+        scheme: 'bearer',
+        bearerFormat: 'JWT',
+      },
     },
-    schemas: {
-      UserProfile: {
-        type: "object",
-        properties: {
-          id: { type: "string", example: "usr_8829" },
-          name: { type: "string", example: "Eng. Roberto Silva" },
-          email: { type: "string", example: "roberto@Ballast.com.br" },
-          role: { type: "string", enum: ["pessoa_fisica", "profissional_crea", "profissional_cau", "empresa_cnpj", "investidor", "admin"] },
-          creaCauNumber: { type: "string", example: "CREA-SP 5069824/D" },
-          verified: { type: "boolean", example: true }
-        }
-      },
-      TechnicalStamp: {
-        type: "object",
-        properties: {
-          stampId: { type: "string", example: "ALC-2026-8812" },
-          registrationNumber: { type: "string", example: "CREA-SP 5092182/D" },
-          hashVerification: { type: "string", example: "e3b0c44298fc1c149afbf4c8996fb..." },
-          artRrtCode: { type: "string", example: "ART SP2026/998124" }
-        }
-      },
-      Post: {
-        type: "object",
-        properties: {
-          id: { type: "string", example: "post_101" },
-          title: { type: "string", example: "Concretagem de Laje Protendida" },
-          content: { type: "string" },
-          budgetEstimated: { type: "number", example: 1250000 },
-          technicalStamp: { $ref: "#/components/schemas/TechnicalStamp" }
-        }
-      },
-      AdCampaign: {
-        type: "object",
-        properties: {
-          id: { type: "string", example: "camp_992" },
-          title: { type: "string" },
-          totalBudget: { type: "number", example: 500.00 },
-          paymentMethod: { type: "string", enum: ["pix", "cartao"] },
-          invoiceNfseUrl: { type: "string" }
-        }
-      }
-    }
   },
   paths: {
-    "/auth/register": {
-      post: {
-        summary: "Cadastro multi-perfil (CREA/CAU/CNPJ)",
-        requestBody: {
-          content: {
-            "application/json": {
-              schema: { $ref: "#/components/schemas/UserProfile" }
-            }
-          }
-        },
-        responses: {
-          201: { description: "Usuário cadastrado com sucesso e credencial pré-validada." }
-        }
-      }
+    '/health': {
+      get: { summary: 'Status de disponibilidade da API e banco de dados' },
     },
-    "/feed/posts": {
-      get: {
-        summary: "Listar feed com filtros por especialidade e localização",
-        parameters: [
-          { name: "category", in: "query", schema: { type: "string" } },
-          { name: "city", in: "query", schema: { type: "string" } }
-        ],
-        responses: {
-          200: { description: "Lista de publicações enriquecidas com Carimbo Técnico." }
-        }
-      },
-      post: {
-        security: [{ bearerAuth: [] }],
-        summary: "Criar nova publicação com chancela técnica",
-        responses: {
-          201: { description: "Publicação criada com hash SHA-256 gerado." }
-        }
-      }
+    '/auth/register': {
+      post: { summary: 'Cadastro público com validação e consentimento LGPD' },
     },
-    "/ads/campaigns": {
-      post: {
-        security: [{ bearerAuth: [] }],
-        summary: "Criar campanha de anúncios self-service e gerar Pix/NFS-e",
-        responses: {
-          201: { description: "Campanha gerada com QR Code Pix em tempo real." }
-        }
-      }
-    }
-  }
+    '/auth/login': {
+      post: { summary: 'Autenticação com e-mail e senha (JWT)' },
+    },
+    '/auth/me': {
+      get: { security: [{ bearerAuth: [] }], summary: 'Validação de sessão ativa no servidor' },
+    },
+    '/professionals': {
+      get: { summary: 'Catálogo público de arquitetos com filtros reais e paginação' },
+    },
+    '/professionals/{id}': {
+      get: { summary: 'Perfil completo compartilhável do profissional e seu portfólio' },
+    },
+    '/portfolio': {
+      post: { security: [{ bearerAuth: [] }], summary: 'Publicação de projeto no portfólio com confirmação do servidor' },
+    },
+    '/proposal-requests': {
+      get: { security: [{ bearerAuth: [] }], summary: 'Solicitações de proposta do usuário autenticado' },
+      post: { security: [{ bearerAuth: [] }], summary: 'Enviar solicitação estruturada de proposta vinculada ao chat' },
+    },
+    '/chat/threads': {
+      get: { security: [{ bearerAuth: [] }], summary: 'Listar conversas exclusivas do participante autenticado' },
+      post: { security: [{ bearerAuth: [] }], summary: 'Criar ou recuperar conversa privada com contexto de projeto' },
+    },
+    '/chat/messages/{threadId}': {
+      get: { security: [{ bearerAuth: [] }], summary: 'Histórico paginado de mensagens (exclusivo aos participantes)' },
+    },
+    '/chat/messages': {
+      post: { security: [{ bearerAuth: [] }], summary: 'Enviar mensagem com deduplicação e entrega WebSocket isolada' },
+    },
+    '/user/export': {
+      get: { security: [{ bearerAuth: [] }], summary: 'LGPD — Exportação completa dos dados do titular' },
+    },
+    '/user/account': {
+      delete: { security: [{ bearerAuth: [] }], summary: 'LGPD — Exclusão permanente da conta com confirmação de senha' },
+    },
+  },
 };

@@ -1,11 +1,10 @@
-import { LocalApiService } from './api';
-import { 
-  Post, 
-  Opportunity, 
-  AdCampaign, 
-  ChatMessage, 
+import {
+  Post,
+  Opportunity,
+  AdCampaign,
+  ChatMessage,
   ChatThread,
-  UserProfile, 
+  UserProfile,
   UserRole,
   ProfessionalProfile,
   CompanyProfile,
@@ -13,12 +12,17 @@ import {
   QuoteRequest,
   FavoriteItem,
   ReviewItem,
-  AdminMetrics
+  AdminMetrics,
+  PortfolioItem,
+  ProposalRequest,
+  ReportItem,
+  ApiResult,
 } from '../types';
 
 const getApiBaseUrl = (): string => {
-  if (import.meta.env.VITE_API_URL) {
-    return import.meta.env.VITE_API_URL;
+  const envUrl = import.meta.env.VITE_API_URL?.trim();
+  if (envUrl) {
+    return envUrl.replace(/\/+$/, '');
   }
   if (typeof window !== 'undefined') {
     const isDevPort = window.location.port === '3000' || window.location.port === '5173';
@@ -29,116 +33,110 @@ const getApiBaseUrl = (): string => {
   return 'http://localhost:4000';
 };
 
-const getWebSocketUrl = (): string => {
+const getWebSocketUrl = (token: string): string => {
   const apiBase = getApiBaseUrl();
+  let base = 'ws://localhost:4000';
   if (apiBase.startsWith('http://')) {
-    return apiBase.replace('http://', 'ws://');
-  }
-  if (apiBase.startsWith('https://')) {
-    return apiBase.replace('https://', 'wss://');
-  }
-  if (typeof window !== 'undefined') {
+    base = apiBase.replace('http://', 'ws://');
+  } else if (apiBase.startsWith('https://')) {
+    base = apiBase.replace('https://', 'wss://');
+  } else if (typeof window !== 'undefined') {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const isDevPort = window.location.port === '3000' || window.location.port === '5173';
-    return isDevPort ? 'ws://localhost:4000' : `${protocol}//${window.location.host}`;
+    base = isDevPort ? 'ws://localhost:4000' : `${protocol}//${window.location.host}`;
   }
-  return 'ws://localhost:4000';
+  return `${base}?token=${encodeURIComponent(token)}`;
 };
 
 export const API_BASE_URL = getApiBaseUrl();
 
-// Auth Token Helpers
-const TOKEN_KEY = 'Ballast_jwt_token';
+const TOKEN_KEY = 'ballast_jwt_token';
 export const getAuthToken = () => localStorage.getItem(TOKEN_KEY);
 export const setAuthToken = (token: string) => localStorage.setItem(TOKEN_KEY, token);
-export const removeAuthToken = () => localStorage.removeItem(TOKEN_KEY);
+export const removeAuthToken = () => {
+  localStorage.removeItem(TOKEN_KEY);
+  localStorage.removeItem('Ballast_jwt_token');
+};
 
-const getHeaders = () => {
+function notifySessionExpired() {
+  removeAuthToken();
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('ballast:session-expired'));
+  }
+}
+
+async function request<T>(
+  path: string,
+  options: RequestInit & { requireAuth?: boolean } = {}
+): Promise<ApiResult<T>> {
+  const { requireAuth = false, ...fetchOptions } = options;
   const token = getAuthToken();
+
+  if (requireAuth && !token) {
+    return { ok: false, status: 401, error: 'Faça login para realizar esta ação.' };
+  }
+
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
+    ...((fetchOptions.headers as Record<string, string>) || {}),
   };
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
   }
-  return headers;
-};
+
+  try {
+    const res = await fetch(`${API_BASE_URL}${path}`, {
+      ...fetchOptions,
+      headers,
+    });
+
+    const contentType = res.headers.get('content-type') || '';
+    const isJson = contentType.includes('application/json');
+    const body = isJson ? await res.json().catch(() => null) : null;
+
+    if (res.status === 401 && token && path !== '/api/auth/login') {
+      notifySessionExpired();
+    }
+
+    if (!res.ok) {
+      return {
+        ok: false,
+        status: res.status,
+        error:
+          (body && typeof body.error === 'string' && body.error) ||
+          (res.status === 404
+            ? 'Serviço da API indisponível no momento (404). Verifique a conexão com o servidor.'
+            : `Erro na comunicação com o servidor (HTTP ${res.status}).`),
+      };
+    }
+
+    return { ok: true, status: res.status, data: body as T };
+  } catch {
+    return {
+      ok: false,
+      offline: true,
+      error: 'Não foi possível conectar ao servidor Ballast. Verifique sua conexão e tente novamente.',
+    };
+  }
+}
 
 export const RealApiClient = {
   // 1. Health Check
-  async checkHealth(): Promise<{ ok: boolean; status?: string; database?: string }> {
-    try {
-      const res = await fetch(`${API_BASE_URL}/api/health`);
-      if (res.ok) {
-        return await res.json();
-      }
-    } catch (err) {
-      console.warn('[API Client] Backend offline:', err);
-    }
-    return { ok: false };
+  async checkHealth(): Promise<ApiResult<{ ok: boolean; status: string; database: string; version?: string }>> {
+    return request('/api/health');
   },
 
-  // 2. Auth: Login & Register
-  async login(email: string, password: string): Promise<{ token?: string; user?: UserProfile; error?: string }> {
-    try {
-      const res = await fetch(`${API_BASE_URL}/api/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      });
-      const data = await res.json();
-      if (res.ok && data.token) {
-        setAuthToken(data.token);
-        LocalApiService.updateUser(data.user);
-        return { token: data.token, user: data.user };
-      }
-      return { error: data.error || 'Falha no login. Verifique e-mail e senha.' };
-    } catch (err: any) {
-      console.warn('[API Client] Fallback local para login:', err);
-      
-      let role: UserRole = 'profissional_crea';
-      let name = 'Eng. Roberto Silva';
-      let creaCau: string | undefined = 'CREA-SP 5069824/D';
-      let cnpj: string | undefined = undefined;
-
-      if (email.toLowerCase().includes('rhuangumbi') || email.toLowerCase().includes('admin')) {
-        role = 'admin';
-        name = email.toLowerCase().includes('rhuangumbi') ? 'Rhuan Gumbi' : 'Administrador Geral';
-        creaCau = 'CREA-BR 000001/D';
-      } else if (email.includes('camila')) {
-        role = 'profissional_cau';
-        name = 'Arqª. Camila Torres';
-        creaCau = 'CAU A88291-0';
-      } else if (email.includes('vanguard')) {
-        role = 'empresa_cnpj';
-        name = 'Vanguard Construtora & Engenharia';
-        cnpj = '33.910.402/0001-12';
-        creaCau = undefined;
-      } else if (email.includes('polimix')) {
-        role = 'fornecedor';
-        name = 'Polimix Materiais & Concreto';
-        cnpj = '44.821.903/0001-55';
-        creaCau = undefined;
-      }
-
-      const fallbackUser: UserProfile = {
-        id: 'usr_' + Date.now(),
-        name,
-        email,
-        role,
-        avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-        city: 'São Paulo',
-        state: 'SP',
-        creaCauNumber: creaCau,
-        cnpjNumber: cnpj,
-        verified: true,
-        consentLgpd: true,
-        createdAt: new Date().toLocaleDateString('pt-BR')
-      };
-      LocalApiService.updateUser(fallbackUser);
-      setAuthToken('demo_token_' + fallbackUser.id);
-      return { user: fallbackUser };
+  // 2. Authentication & Server Session Validation (Zero simulated fallbacks)
+  async login(email: string, password: string): Promise<ApiResult<{ token: string; user: UserProfile }>> {
+    const res = await request<{ token: string; user: UserProfile }>('/api/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({ email, password }),
+    });
+    if (res.ok && res.data?.token && res.data?.user) {
+      setAuthToken(res.data.token);
+      return res;
     }
+    return { ok: false, status: res.status, offline: res.offline, error: res.error || 'Falha na autenticação.' };
   },
 
   async register(userData: {
@@ -150,104 +148,169 @@ export const RealApiClient = {
     cnpjNumber?: string;
     phone?: string;
     whatsapp?: string;
+    city: string;
+    state: string;
+    bio?: string;
+    profession?: string;
+    specialty?: string;
+    experienceYears?: number;
+    services?: string[];
+    styles?: string[];
+    projectTypes?: string[];
+    investmentRanges?: string[];
+    serviceArea?: string;
+    availability?: string;
+    consentLgpd: boolean;
+  }): Promise<ApiResult<{ token: string; user: UserProfile }>> {
+    const res = await request<{ token: string; user: UserProfile }>('/api/auth/register', {
+      method: 'POST',
+      body: JSON.stringify(userData),
+    });
+    if (res.ok && res.data?.token && res.data?.user) {
+      setAuthToken(res.data.token);
+      return res;
+    }
+    return { ok: false, status: res.status, offline: res.offline, error: res.error || 'Não foi possível concluir o cadastro.' };
+  },
+
+  async validateSession(): Promise<ApiResult<UserProfile>> {
+    const token = getAuthToken();
+    if (!token) return { ok: false, status: 401, error: 'Sem sessão ativa.' };
+    return request<UserProfile>('/api/auth/me', { requireAuth: true });
+  },
+
+  async updateProfile(profileData: Record<string, any>): Promise<ApiResult<{ success: boolean; user: UserProfile }>> {
+    return request('/api/user/profile', {
+      method: 'PUT',
+      requireAuth: true,
+      body: JSON.stringify(profileData),
+    });
+  },
+
+  async exportMyData(): Promise<ApiResult<Record<string, any>>> {
+    return request('/api/user/export', { requireAuth: true });
+  },
+
+  async deleteMyAccount(password: string): Promise<ApiResult<{ deleted: boolean; message: string }>> {
+    const res = await request<{ deleted: boolean; message: string }>('/api/user/account', {
+      method: 'DELETE',
+      requireAuth: true,
+      body: JSON.stringify({ password }),
+    });
+    if (res.ok) removeAuthToken();
+    return res;
+  },
+
+  // 3. Directory & Portfolios
+  async getProfessionals(filters?: {
+    q?: string;
     city?: string;
     state?: string;
-  }): Promise<{ token?: string; user?: UserProfile; error?: string }> {
-    try {
-      const res = await fetch(`${API_BASE_URL}/api/auth/register`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(userData),
-      });
-      const data = await res.json();
-      if (res.ok && data.token) {
-        setAuthToken(data.token);
-        LocalApiService.updateUser(data.user);
-        return { token: data.token, user: data.user };
-      }
-      return { error: data.error || 'Falha no cadastro' };
-    } catch (err: any) {
-      console.warn('[API Client] Fallback local para registro:', err);
-      const user = LocalApiService.updateUser({
-        name: userData.name,
-        email: userData.email,
-        role: userData.role,
-        creaCauNumber: userData.creaCauNumber,
-        cnpjNumber: userData.cnpjNumber,
-      });
-      return { user };
-    }
+    specialty?: string;
+    projectType?: string;
+    style?: string;
+    investmentRange?: string;
+    availability?: string;
+    verifiedOnly?: boolean;
+    page?: number;
+    limit?: number;
+  }): Promise<ApiResult<{ items: ProfessionalProfile[]; page: number; limit: number }>> {
+    const params = new URLSearchParams();
+    if (filters?.q) params.set('q', filters.q);
+    if (filters?.city) params.set('city', filters.city);
+    if (filters?.state) params.set('state', filters.state);
+    if (filters?.specialty) params.set('specialty', filters.specialty);
+    if (filters?.projectType) params.set('projectType', filters.projectType);
+    if (filters?.style) params.set('style', filters.style);
+    if (filters?.investmentRange) params.set('investmentRange', filters.investmentRange);
+    if (filters?.availability) params.set('availability', filters.availability);
+    if (filters?.verifiedOnly) params.set('verifiedOnly', 'true');
+    if (filters?.page) params.set('page', String(filters.page));
+    if (filters?.limit) params.set('limit', String(filters.limit));
+    return request(`/api/professionals?${params.toString()}`);
   },
 
-  async updateProfile(profileData: Partial<UserProfile>): Promise<boolean> {
-    try {
-      const res = await fetch(`${API_BASE_URL}/api/user/profile`, {
-        method: 'PUT',
-        headers: getHeaders(),
-        body: JSON.stringify(profileData),
-      });
-      return res.ok;
-    } catch (err) {
-      return false;
-    }
+  async getProfessionalById(id: string): Promise<ApiResult<ProfessionalProfile>> {
+    return request(`/api/professionals/${encodeURIComponent(id)}`);
   },
 
-  // 3. Directory: Professionals, Companies, Suppliers
-  async getProfessionals(filters?: { q?: string; city?: string; state?: string; specialty?: string }): Promise<ProfessionalProfile[]> {
-    try {
-      const params = new URLSearchParams();
-      if (filters?.q) params.set('q', filters.q);
-      if (filters?.city) params.set('city', filters.city);
-      if (filters?.state) params.set('state', filters.state);
-      if (filters?.specialty) params.set('specialty', filters.specialty);
-
-      const res = await fetch(`${API_BASE_URL}/api/professionals?${params.toString()}`);
-      if (res.ok) {
-        return await res.json();
-      }
-    } catch (err) {
-      console.warn('[API Client] Erro ao carregar profissionais:', err);
-    }
-    return [];
+  async createPortfolioItem(data: {
+    title: string;
+    description: string;
+    context?: string;
+    projectType: string;
+    city: string;
+    state: string;
+    year?: string;
+    photoCredit?: string;
+    mediaUrls: string[];
+  }): Promise<ApiResult<PortfolioItem>> {
+    return request('/api/portfolio', {
+      method: 'POST',
+      requireAuth: true,
+      body: JSON.stringify(data),
+    });
   },
 
-  async getCompanies(filters?: { q?: string; city?: string }): Promise<CompanyProfile[]> {
-    try {
-      const params = new URLSearchParams();
-      if (filters?.q) params.set('q', filters.q);
-      if (filters?.city) params.set('city', filters.city);
-
-      const res = await fetch(`${API_BASE_URL}/api/companies?${params.toString()}`);
-      if (res.ok) {
-        return await res.json();
-      }
-    } catch (err) {
-      console.warn('[API Client] Erro ao carregar empresas:', err);
-    }
-    return [];
+  async deletePortfolioItem(id: string): Promise<ApiResult<{ deleted: boolean }>> {
+    return request(`/api/portfolio/${encodeURIComponent(id)}`, {
+      method: 'DELETE',
+      requireAuth: true,
+    });
   },
 
-  async getSuppliers(filters?: { q?: string; category?: string; city?: string }): Promise<SupplierProfile[]> {
-    try {
-      const params = new URLSearchParams();
-      if (filters?.q) params.set('q', filters.q);
-      if (filters?.category) params.set('category', filters.category);
-      if (filters?.city) params.set('city', filters.city);
-
-      const res = await fetch(`${API_BASE_URL}/api/suppliers?${params.toString()}`);
-      if (res.ok) {
-        return await res.json();
-      }
-    } catch (err) {
-      console.warn('[API Client] Erro ao carregar fornecedores:', err);
-    }
-    return [];
+  async getCompanies(filters?: { q?: string; city?: string }): Promise<ApiResult<{ items: CompanyProfile[] }>> {
+    const params = new URLSearchParams();
+    if (filters?.q) params.set('q', filters.q);
+    if (filters?.city) params.set('city', filters.city);
+    return request(`/api/companies?${params.toString()}`);
   },
 
-  // 4. Material Quotations (Cotações de Materiais)
+  async getSuppliers(filters?: { q?: string; category?: string; city?: string }): Promise<ApiResult<{ items: SupplierProfile[] }>> {
+    const params = new URLSearchParams();
+    if (filters?.q) params.set('q', filters.q);
+    if (filters?.category) params.set('category', filters.category);
+    if (filters?.city) params.set('city', filters.city);
+    return request(`/api/suppliers?${params.toString()}`);
+  },
+
+  // 4. Structured Proposal Requests
+  async getProposalRequests(): Promise<ApiResult<ProposalRequest[]>> {
+    return request('/api/proposal-requests', { requireAuth: true });
+  },
+
+  async createProposalRequest(data: {
+    architectId: string;
+    projectType: string;
+    city: string;
+    state: string;
+    budgetRange?: string;
+    timeline?: string;
+    currentStage?: string;
+    description: string;
+    stylePreferences?: string[];
+  }): Promise<ApiResult<{ id: string; threadId: string; projectTitle: string; status: string }>> {
+    return request('/api/proposal-requests', {
+      method: 'POST',
+      requireAuth: true,
+      body: JSON.stringify(data),
+    });
+  },
+
+  async updateProposalRequestStatus(
+    id: string,
+    status: 'em_analise' | 'respondida' | 'recusada' | 'cancelada',
+    architectResponse?: string
+  ): Promise<ApiResult<{ id: string; status: string }>> {
+    return request(`/api/proposal-requests/${encodeURIComponent(id)}/status`, {
+      method: 'PATCH',
+      requireAuth: true,
+      body: JSON.stringify({ status, architectResponse }),
+    });
+  },
+
+  // 5. Material Quotations (Authenticated)
   async createQuoteRequest(data: {
-    requesterId: string;
-    requesterName: string;
     requesterPhone?: string;
     requesterWhatsapp?: string;
     supplierId?: string;
@@ -257,332 +320,190 @@ export const RealApiClient = {
     state: string;
     notes?: string;
     items: Array<{ productName: string; quantity: number; unit: string; notes?: string }>;
-  }): Promise<{ id: string; status: string }> {
-    try {
-      const res = await fetch(`${API_BASE_URL}/api/quotes`, {
-        method: 'POST',
-        headers: getHeaders(),
-        body: JSON.stringify(data),
-      });
-      if (res.ok) {
-        return await res.json();
-      }
-    } catch (err) {
-      console.warn('[API Client] Erro ao criar cotação:', err);
-    }
-    return { id: `quote_${Date.now()}`, status: 'aberta' };
+  }): Promise<ApiResult<{ id: string; status: string }>> {
+    return request('/api/quotes', {
+      method: 'POST',
+      requireAuth: true,
+      body: JSON.stringify(data),
+    });
   },
 
-  async getQuoteRequests(filters?: { userId?: string; supplierId?: string }): Promise<QuoteRequest[]> {
-    try {
-      const params = new URLSearchParams();
-      if (filters?.userId) params.set('userId', filters.userId);
-      if (filters?.supplierId) params.set('supplierId', filters.supplierId);
-
-      const res = await fetch(`${API_BASE_URL}/api/quotes?${params.toString()}`);
-      if (res.ok) {
-        return await res.json();
-      }
-    } catch (err) {
-      console.warn('[API Client] Erro ao buscar cotações:', err);
-    }
-    return [];
+  async getQuoteRequests(page = 1): Promise<ApiResult<{ items: QuoteRequest[]; page: number; limit: number }>> {
+    return request(`/api/quotes?page=${page}`, { requireAuth: true });
   },
 
-  async respondQuote(quoteId: string, responseData: {
-    supplierId: string;
-    supplierName: string;
-    unitPrice: number;
-    totalPrice: number;
-    shippingPrice: number;
-    totalSum: number;
-    deliveryDays: number;
-    validityDays: number;
-    notes?: string;
-  }): Promise<boolean> {
-    try {
-      const res = await fetch(`${API_BASE_URL}/api/quotes/${quoteId}/respond`, {
-        method: 'POST',
-        headers: getHeaders(),
-        body: JSON.stringify(responseData),
-      });
-      return res.ok;
-    } catch (err) {
-      return false;
-    }
+  // 6. Feed Posts & Projects
+  async getPosts(page = 1): Promise<ApiResult<{ items: Post[]; page: number; limit: number }>> {
+    return request(`/api/feed/posts?page=${page}`);
   },
 
-  // 5. Feed Posts & Carimbo Técnico
-  async getPosts(): Promise<Post[]> {
-    try {
-      const res = await fetch(`${API_BASE_URL}/api/feed/posts`);
-      if (res.ok) {
-        const data = await res.json();
-        if (Array.isArray(data)) {
-          return data.filter(p => !['post_1', 'post_2', 'post_3'].includes(p.id));
-        }
-      }
-    } catch (err) {
-      console.warn('[API Client] Fallback LocalApiService para getPosts:', err);
-    }
-    return LocalApiService.getPosts();
+  async getPostById(id: string): Promise<ApiResult<Post>> {
+    return request(`/api/feed/posts/${encodeURIComponent(id)}`);
   },
 
-  async createPost(postData: any): Promise<any> {
-    try {
-      const res = await fetch(`${API_BASE_URL}/api/feed/posts`, {
-        method: 'POST',
-        headers: getHeaders(),
-        body: JSON.stringify(postData),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        LocalApiService.addPost(postData);
-        return data;
-      }
-    } catch (err) {
-      console.warn('[API Client] Fallback para LocalApiService ao criar post:', err);
-    }
-    return LocalApiService.addPost(postData);
+  async createPost(postData: {
+    category: string;
+    title: string;
+    content: string;
+    mediaUrls: string[];
+    location: { city: string; state: string };
+    budgetEstimated?: number;
+    deadlineDays?: number;
+    artRrtCode?: string;
+  }): Promise<ApiResult<Post>> {
+    return request('/api/feed/posts', {
+      method: 'POST',
+      requireAuth: true,
+      body: JSON.stringify(postData),
+    });
   },
 
-  async likePost(postId: string): Promise<Post[]> {
-    try {
-      fetch(`${API_BASE_URL}/api/feed/posts/${postId}/like`, {
-        method: 'POST',
-        headers: getHeaders(),
-      }).catch(e => console.warn('[API Client] Like sync error:', e));
-    } catch (err) {
-      // ignore
-    }
-    return LocalApiService.toggleLikePost(postId);
+  async likePost(postId: string): Promise<ApiResult<{ success: boolean; postId: string; liked: boolean; likesCount: number }>> {
+    return request(`/api/feed/posts/${encodeURIComponent(postId)}/like`, {
+      method: 'POST',
+      requireAuth: true,
+    });
   },
 
-  // 6. Opportunities & Demands
-  async getOpportunities(filters?: { q?: string; category?: string; city?: string; status?: string }): Promise<Opportunity[]> {
-    try {
-      const params = new URLSearchParams();
-      if (filters?.q) params.set('q', filters.q);
-      if (filters?.category) params.set('category', filters.category);
-      if (filters?.city) params.set('city', filters.city);
-      if (filters?.status) params.set('status', filters.status);
-
-      const res = await fetch(`${API_BASE_URL}/api/opportunities?${params.toString()}`);
-      if (res.ok) {
-        const data = await res.json();
-        if (Array.isArray(data) && data.length > 0) {
-          return data;
-        }
-      }
-    } catch (err) {
-      console.warn('[API Client] Fallback LocalApiService para getOpportunities:', err);
-    }
-    return LocalApiService.getOpportunities();
+  // 7. Opportunities & Proposals
+  async getOpportunities(filters?: { q?: string; category?: string; city?: string; page?: number }): Promise<ApiResult<{ items: Opportunity[] }>> {
+    const params = new URLSearchParams();
+    if (filters?.q) params.set('q', filters.q);
+    if (filters?.category) params.set('category', filters.category);
+    if (filters?.city) params.set('city', filters.city);
+    if (filters?.page) params.set('page', String(filters.page));
+    return request(`/api/opportunities?${params.toString()}`);
   },
 
-  async createOpportunity(oppData: any): Promise<Opportunity> {
-    try {
-      const res = await fetch(`${API_BASE_URL}/api/opportunities`, {
-        method: 'POST',
-        headers: getHeaders(),
-        body: JSON.stringify(oppData),
-      });
-      if (res.ok) {
-        await res.json();
-      }
-    } catch (err) {
-      console.warn('[API Client] Fallback local para criar oportunidade:', err);
-    }
-    return LocalApiService.addOpportunity(oppData);
+  async createOpportunity(oppData: Record<string, any>): Promise<ApiResult<{ id: string; title: string; status: string }>> {
+    return request('/api/opportunities', {
+      method: 'POST',
+      requireAuth: true,
+      body: JSON.stringify(oppData),
+    });
   },
 
-  async submitProposal(oppId: string, proposalData: any): Promise<any> {
-    try {
-      const res = await fetch(`${API_BASE_URL}/api/opportunities/${oppId}/proposals`, {
-        method: 'POST',
-        headers: getHeaders(),
-        body: JSON.stringify(proposalData),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        LocalApiService.addProposal(oppId, proposalData);
-        return data;
-      }
-    } catch (err) {
-      console.warn('[API Client] Fallback LocalApiService para submitProposal:', err);
-    }
-    return LocalApiService.addProposal(oppId, proposalData);
+  async submitProposal(oppId: string, proposalData: Record<string, any>): Promise<ApiResult<{ id: string; status: string }>> {
+    return request(`/api/opportunities/${encodeURIComponent(oppId)}/proposals`, {
+      method: 'POST',
+      requireAuth: true,
+      body: JSON.stringify(proposalData),
+    });
   },
 
-  // 7. Favorites
-  async getFavorites(userId?: string): Promise<FavoriteItem[]> {
-    try {
-      const res = await fetch(`${API_BASE_URL}/api/favorites?userId=${userId || 'usr_curr'}`);
-      if (res.ok) {
-        return await res.json();
-      }
-    } catch (err) {
-      console.warn('[API Client] Erro ao carregar favoritos:', err);
-    }
-    return [];
+  // 8. Favorites, Reviews & Reports
+  async getFavorites(): Promise<ApiResult<FavoriteItem[]>> {
+    return request('/api/favorites', { requireAuth: true });
   },
 
   async toggleFavorite(data: {
-    userId?: string;
     targetType: 'professional' | 'company' | 'supplier' | 'opportunity';
     targetId: string;
     targetTitle: string;
     targetSubtitle?: string;
     targetAvatar?: string;
-  }): Promise<{ favorited: boolean }> {
-    try {
-      const res = await fetch(`${API_BASE_URL}/api/favorites`, {
-        method: 'POST',
-        headers: getHeaders(),
-        body: JSON.stringify(data),
-      });
-      if (res.ok) {
-        return await res.json();
-      }
-    } catch (err) {
-      console.warn('[API Client] Erro ao favoritar:', err);
-    }
-    return { favorited: true };
+  }): Promise<ApiResult<{ favorited: boolean; id: string }>> {
+    return request('/api/favorites', {
+      method: 'POST',
+      requireAuth: true,
+      body: JSON.stringify(data),
+    });
   },
 
-  // 8. Reviews
-  async getReviews(userId: string): Promise<ReviewItem[]> {
-    try {
-      const res = await fetch(`${API_BASE_URL}/api/reviews/${userId}`);
-      if (res.ok) {
-        return await res.json();
-      }
-    } catch (err) {
-      console.warn('[API Client] Erro ao buscar avaliações:', err);
-    }
-    return [];
+  async getReviews(userId: string): Promise<ApiResult<ReviewItem[]>> {
+    return request(`/api/reviews/${encodeURIComponent(userId)}`);
   },
 
   async createReview(data: {
-    reviewerId?: string;
-    reviewerName: string;
-    reviewerAvatar?: string;
     targetUserId: string;
     rating: number;
     comment: string;
     contractType?: string;
-  }): Promise<boolean> {
+  }): Promise<ApiResult<{ id: string; rating: number; reviewsCount: number }>> {
+    return request('/api/reviews', {
+      method: 'POST',
+      requireAuth: true,
+      body: JSON.stringify(data),
+    });
+  },
+
+  async submitReport(data: {
+    targetType: 'chat' | 'profile' | 'post' | 'proposal';
+    targetId: string;
+    reason: string;
+    details?: string;
+  }): Promise<ApiResult<{ id: string; message: string }>> {
+    return request('/api/reports', {
+      method: 'POST',
+      requireAuth: true,
+      body: JSON.stringify(data),
+    });
+  },
+
+  async sendTelemetry(eventName: string, path: string, metadata?: Record<string, any>): Promise<void> {
     try {
-      const res = await fetch(`${API_BASE_URL}/api/reviews`, {
+      await fetch(`${API_BASE_URL}/api/telemetry/events`, {
         method: 'POST',
-        headers: getHeaders(),
-        body: JSON.stringify(data),
+        headers: {
+          'Content-Type': 'application/json',
+          ...(getAuthToken() ? { Authorization: `Bearer ${getAuthToken()}` } : {}),
+        },
+        body: JSON.stringify({ eventName, path, metadata }),
+        keepalive: true,
       });
-      return res.ok;
-    } catch (err) {
-      return false;
+    } catch {
+      // Non-blocking telemetry
     }
   },
 
-  // 9. Admin Operations
-  async getAdminMetrics(): Promise<AdminMetrics | null> {
-    try {
-      const res = await fetch(`${API_BASE_URL}/api/admin/metrics`, {
-        headers: getHeaders(),
-      });
-      if (res.ok) {
-        return await res.json();
-      }
-    } catch (err) {
-      console.warn('[API Client] Erro ao buscar métricas de admin:', err);
-    }
-    return null;
+  // 9. Admin Operations (Server-enforced RBAC)
+  async getAdminMetrics(): Promise<ApiResult<AdminMetrics>> {
+    return request('/api/admin/metrics', { requireAuth: true });
   },
 
-  async getAdminUsers(): Promise<any[]> {
-    try {
-      const res = await fetch(`${API_BASE_URL}/api/admin/users`, {
-        headers: getHeaders(),
-      });
-      if (res.ok) {
-        return await res.json();
-      }
-    } catch (err) {
-      console.warn('[API Client] Erro ao buscar usuários admin:', err);
-    }
-    return [];
+  async getAdminUsers(): Promise<ApiResult<{ items: any[] }>> {
+    return request('/api/admin/users', { requireAuth: true });
   },
 
-  async verifyUser(userId: string): Promise<boolean> {
-    try {
-      const res = await fetch(`${API_BASE_URL}/api/admin/users/${userId}/verify`, {
-        method: 'PATCH',
-        headers: getHeaders(),
-      });
-      return res.ok;
-    } catch (err) {
-      return false;
-    }
+  async verifyUser(userId: string, verified = true): Promise<ApiResult<{ success: boolean }>> {
+    return request(`/api/admin/users/${encodeURIComponent(userId)}/verify`, {
+      method: 'PATCH',
+      requireAuth: true,
+      body: JSON.stringify({ verified }),
+    });
+  },
+
+  async getAdminReports(): Promise<ApiResult<ReportItem[]>> {
+    return request('/api/admin/reports', { requireAuth: true });
+  },
+
+  async resolveReport(reportId: string, status: 'aprovado' | 'removido' | 'resolvido'): Promise<ApiResult<{ success: boolean }>> {
+    return request(`/api/admin/reports/${encodeURIComponent(reportId)}`, {
+      method: 'PATCH',
+      requireAuth: true,
+      body: JSON.stringify({ status }),
+    });
   },
 
   // 10. Ads Campaigns
-  async getCampaigns(userId?: string): Promise<AdCampaign[]> {
-    try {
-      const url = userId ? `${API_BASE_URL}/api/ads/campaigns?userId=${userId}` : `${API_BASE_URL}/api/ads/campaigns`;
-      const res = await fetch(url);
-      if (res.ok) {
-        const data = await res.json();
-        if (Array.isArray(data) && data.length > 0) {
-          return data;
-        }
-      }
-    } catch (err) {
-      console.warn('[API Client] Fallback LocalApiService para getCampaigns:', err);
-    }
-    return LocalApiService.getCampaigns();
+  async getCampaigns(): Promise<ApiResult<AdCampaign[]>> {
+    return request('/api/ads/campaigns');
   },
 
-  async createCampaign(campData: any): Promise<AdCampaign> {
-    try {
-      const res = await fetch(`${API_BASE_URL}/api/ads/campaigns`, {
-        method: 'POST',
-        headers: getHeaders(),
-        body: JSON.stringify(campData),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        LocalApiService.addCampaign(data);
-        return data;
-      }
-    } catch (err) {
-      console.warn('[API Client] Fallback para LocalApiService ao criar campanha:', err);
-    }
-    return LocalApiService.addCampaign(campData);
+  async createCampaign(campData: Record<string, any>): Promise<ApiResult<AdCampaign>> {
+    return request('/api/ads/campaigns', {
+      method: 'POST',
+      requireAuth: true,
+      body: JSON.stringify(campData),
+    });
   },
 
-  async payCampaign(campaignId: string): Promise<boolean> {
-    try {
-      const res = await fetch(`${API_BASE_URL}/api/ads/campaigns/${campaignId}/pay`, {
-        method: 'POST',
-        headers: getHeaders(),
-      });
-      return res.ok;
-    } catch (err) {
-      return false;
-    }
-  },
-
-  async toggleCampaign(campaignId: string, status: 'ativa' | 'pausada'): Promise<boolean> {
-    try {
-      const res = await fetch(`${API_BASE_URL}/api/ads/campaigns/${campaignId}/toggle`, {
-        method: 'POST',
-        headers: getHeaders(),
-        body: JSON.stringify({ status }),
-      });
-      return res.ok;
-    } catch (err) {
-      return false;
-    }
+  async toggleCampaign(campaignId: string, status: 'ativa' | 'pausada'): Promise<ApiResult<{ success: boolean }>> {
+    return request(`/api/ads/campaigns/${encodeURIComponent(campaignId)}/toggle`, {
+      method: 'POST',
+      requireAuth: true,
+      body: JSON.stringify({ status }),
+    });
   },
 
   async trackAdImpression(campaignId: string): Promise<void> {
@@ -592,9 +513,7 @@ export const RealApiClient = {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ campaignId }),
       });
-    } catch (err) {
-      // Non-blocking telemetry
-    }
+    } catch {}
   },
 
   async trackAdClick(campaignId: string): Promise<void> {
@@ -604,146 +523,124 @@ export const RealApiClient = {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ campaignId }),
       });
-    } catch (err) {
-      // Non-blocking telemetry
-    }
+    } catch {}
   },
 
-  // 11. Chat Messages & WebSocket
-  async getThreads(userId?: string): Promise<ChatThread[]> {
-    try {
-      const url = userId ? `${API_BASE_URL}/api/chat/threads?userId=${userId}` : `${API_BASE_URL}/api/chat/threads`;
-      const res = await fetch(url);
-      if (res.ok) {
-        const data = await res.json();
-        if (Array.isArray(data)) {
-          return data;
-        }
-      }
-    } catch (err) {
-      console.warn('[API Client] Fallback LocalApiService para getThreads:', err);
-    }
-    return LocalApiService.getChatThreads();
+  // 11. Protected Realtime Chat & WebSocket
+  async getThreads(): Promise<ApiResult<ChatThread[]>> {
+    return request('/api/chat/threads', { requireAuth: true });
   },
 
-  async createOrGetThread(
-    participant: { id: string; name: string; role?: string; avatar?: string },
-    currentUser: UserProfile
-  ): Promise<ChatThread> {
-    try {
-      const payload = {
-        participantId: participant.id,
-        participantName: participant.name,
-        participantRole: participant.role || 'Profissional',
-        participantAvatar: participant.avatar,
-        currentUserId: currentUser.id,
-        currentUserName: currentUser.name,
-        currentUserRole: currentUser.role,
-        currentUserAvatar: currentUser.avatar,
-      };
-
-      const res = await fetch(`${API_BASE_URL}/api/chat/threads`, {
-        method: 'POST',
-        headers: getHeaders(),
-        body: JSON.stringify(payload),
-      });
-
-      if (res.ok) {
-        const data = await res.json();
-        LocalApiService.createOrGetThread(participant);
-        return data;
-      }
-    } catch (err) {
-      console.warn('[API Client] Fallback local para createOrGetThread:', err);
-    }
-    return LocalApiService.createOrGetThread(participant);
+  async createOrGetThread(participantId: string, projectTitle?: string, opportunityId?: string): Promise<ApiResult<ChatThread>> {
+    return request('/api/chat/threads', {
+      method: 'POST',
+      requireAuth: true,
+      body: JSON.stringify({ participantId, projectTitle, opportunityId }),
+    });
   },
 
-  async getMessages(threadId: string): Promise<ChatMessage[]> {
-    try {
-      const res = await fetch(`${API_BASE_URL}/api/chat/messages/${threadId}`);
-      if (res.ok) {
-        const data = await res.json();
-        if (Array.isArray(data)) {
-          return data;
-        }
-      }
-    } catch (err) {
-      console.warn('[API Client] Fallback LocalApiService para getMessages:', err);
-    }
-    return LocalApiService.getMessages(threadId);
+  async getMessages(threadId: string, options?: { limit?: number; before?: string }): Promise<ApiResult<{ messages: ChatMessage[]; hasMore: boolean }>> {
+    const params = new URLSearchParams();
+    if (options?.limit) params.set('limit', String(options.limit));
+    if (options?.before) params.set('before', options.before);
+    const qs = params.toString() ? `?${params.toString()}` : '';
+    return request(`/api/chat/messages/${encodeURIComponent(threadId)}${qs}`, { requireAuth: true });
   },
 
   async sendMessage(
-    threadId: string, 
-    text: string, 
-    sender: UserProfile, 
-    receiverId?: string, 
+    threadId: string,
+    text: string,
+    clientMessageId: string,
     attachmentUrl?: string
-  ): Promise<ChatMessage> {
-    const payload = {
-      threadId,
-      senderId: sender.id,
-      senderName: sender.name,
-      receiverId: receiverId || 'usr_participant',
-      text,
-      attachmentUrl,
+  ): Promise<ApiResult<ChatMessage>> {
+    return request('/api/chat/messages', {
+      method: 'POST',
+      requireAuth: true,
+      body: JSON.stringify({ threadId, text, clientMessageId, attachmentUrl }),
+    });
+  },
+
+  async markMessagesAsRead(threadId: string): Promise<ApiResult<{ ok: boolean; updated: number }>> {
+    return request(`/api/chat/messages/${encodeURIComponent(threadId)}/read`, {
+      method: 'PATCH',
+      requireAuth: true,
+    });
+  },
+
+  // Authenticated, auto-reconnecting WebSocket client
+  connectWebSocket(
+    onMessage: (payload: any) => void,
+    onStatusChange?: (connected: boolean) => void
+  ): { close: () => void } | null {
+    const token = getAuthToken();
+    if (!token) return null;
+
+    let ws: WebSocket | null = null;
+    let closedByClient = false;
+    let reconnectAttempt = 0;
+    let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+    let pingTimer: ReturnType<typeof setInterval> | null = null;
+
+    const connect = () => {
+      if (closedByClient) return;
+      const currentToken = getAuthToken();
+      if (!currentToken) return;
+
+      try {
+        ws = new WebSocket(getWebSocketUrl(currentToken));
+
+        ws.onopen = () => {
+          reconnectAttempt = 0;
+          onStatusChange?.(true);
+          if (pingTimer) clearInterval(pingTimer);
+          pingTimer = setInterval(() => {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+              ws.send(JSON.stringify({ type: 'PING' }));
+            }
+          }, 25000);
+        };
+
+        ws.onmessage = (event) => {
+          try {
+            const payload = JSON.parse(event.data);
+            onMessage(payload);
+          } catch {}
+        };
+
+        ws.onclose = (ev) => {
+          onStatusChange?.(false);
+          if (pingTimer) clearInterval(pingTimer);
+          if (ev.code === 4001) {
+            // Invalid/expired token — do not retry loop
+            notifySessionExpired();
+            return;
+          }
+          if (!closedByClient && reconnectAttempt < 5) {
+            const delay = Math.min(15000, 1500 * Math.pow(2, reconnectAttempt));
+            reconnectAttempt += 1;
+            reconnectTimer = setTimeout(connect, delay);
+          }
+        };
+
+        ws.onerror = () => {
+          onStatusChange?.(false);
+        };
+      } catch {
+        onStatusChange?.(false);
+      }
     };
 
-    try {
-      const res = await fetch(`${API_BASE_URL}/api/chat/messages`, {
-        method: 'POST',
-        headers: getHeaders(),
-        body: JSON.stringify(payload),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        LocalApiService.sendMessage(threadId, text, attachmentUrl, receiverId);
-        return data;
-      }
-    } catch (err) {
-      console.warn('[API Client] Fallback local para sendMessage:', err);
-    }
-    return LocalApiService.sendMessage(threadId, text, attachmentUrl, receiverId);
-  },
+    connect();
 
-  async markMessagesAsRead(threadId: string): Promise<void> {
-    try {
-      await fetch(`${API_BASE_URL}/api/chat/messages/${threadId}/read`, {
-        method: 'PATCH',
-        headers: getHeaders(),
-      });
-    } catch (err) {
-      // Non-blocking
-    }
-  },
-
-  connectWebSocket(onMessage: (msg: any) => void): WebSocket | null {
-    try {
-      const wsUrl = getWebSocketUrl();
-      const ws = new WebSocket(wsUrl);
-
-      ws.onopen = () => {
-        console.log(`[WebSocket] Conectado ao servidor Ballast em: ${wsUrl}`);
-      };
-
-      ws.onmessage = (event) => {
-        try {
-          const payload = JSON.parse(event.data);
-          onMessage(payload);
-        } catch (e) {
-          console.error('[WebSocket] Erro ao processar mensagem recebida:', e);
+    return {
+      close: () => {
+        closedByClient = true;
+        if (reconnectTimer) clearTimeout(reconnectTimer);
+        if (pingTimer) clearInterval(pingTimer);
+        if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) {
+          ws.close();
         }
-      };
-
-      ws.onerror = (err) => {
-        console.warn('[WebSocket] Aviso de conexão:', err);
-      };
-
-      return ws;
-    } catch (err) {
-      console.warn('[WebSocket] Não foi possível conectar ao WebSocket:', err);
-      return null;
-    }
+      },
+    };
   },
 };

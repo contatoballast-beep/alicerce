@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /chat
+Disallow: /api/
+
+Sitemap: https://ballastarch.com/sitemap.xml

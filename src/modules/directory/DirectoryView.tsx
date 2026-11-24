@@ -1,511 +1,699 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  ProfessionalProfile, 
-  CompanyProfile, 
-  SupplierProfile, 
-  UserProfile 
+import React, { useState, useEffect, useCallback } from 'react';
+import {
+  ProfessionalProfile,
+  UserProfile,
+  ClientBriefing,
 } from '../../types';
 import { RealApiClient } from '../../services/realApiClient';
-import { 
-  Search, 
-  MapPin, 
-  Star, 
-  Phone, 
-  FileText, 
-  Heart, 
-  CheckCircle2, 
-  Building2, 
-  Truck, 
-  HardHat, 
+import { trackEvent } from '../../services/telemetry';
+import {
+  PROJECT_TYPES,
+  ARCHITECTURAL_STYLES,
+  INVESTMENT_RANGES,
+  formatAvailability,
+  getCompatibilityReasons,
+} from '../../utils/compatibility';
+import {
+  Search,
+  MapPin,
+  Heart,
   ShieldCheck,
-  ExternalLink,
-  ChevronRight
+  Scale,
+  AlertTriangle,
+  RefreshCw,
+  SlidersHorizontal,
+  ArrowRight,
+  Check,
+  Sparkles,
+  UserPlus,
 } from 'lucide-react';
 
 interface DirectoryViewProps {
   currentUser: UserProfile;
-  onRequestQuote: (target: any) => void;
-  onOpenProfile: (target: any) => void;
-  onToggleFavorite: (target: any) => void;
+  briefing: ClientBriefing | null;
+  onOpenArchitectPage: (prof: ProfessionalProfile) => void;
+  onRequestProposal: (prof: ProfessionalProfile) => void;
+  onToggleFavorite: (prof: ProfessionalProfile) => void;
   favoriteIds: Set<string>;
+  compareList: ProfessionalProfile[];
+  onToggleCompare: (prof: ProfessionalProfile) => void;
+  onOpenCompare: () => void;
+  onOpenBriefing: () => void;
+  onArchitectSignup: () => void;
 }
 
 export const DirectoryView: React.FC<DirectoryViewProps> = ({
-  currentUser,
-  onRequestQuote,
-  onOpenProfile,
+  briefing,
+  onOpenArchitectPage,
+  onRequestProposal,
   onToggleFavorite,
   favoriteIds,
+  compareList,
+  onToggleCompare,
+  onOpenCompare,
+  onOpenBriefing,
+  onArchitectSignup,
 }) => {
-  const [activeTab, setActiveTab] = useState<'all' | 'professionals' | 'companies' | 'suppliers'>('all');
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCity, setSelectedCity] = useState('todas');
-  
-  const [professionals, setProfessionals] = useState<ProfessionalProfile[]>([]);
-  const [companies, setCompanies] = useState<CompanyProfile[]>([]);
-  const [suppliers, setSuppliers] = useState<SupplierProfile[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [cityFilter, setCityFilter] = useState(briefing?.city || '');
+  const [projectTypeFilter, setProjectTypeFilter] = useState(briefing?.projectType || '');
+  const [styleFilter, setStyleFilter] = useState(briefing?.stylePreferences?.[0] || '');
+  const [investmentFilter, setInvestmentFilter] = useState(briefing?.budgetRange || '');
+  const [availabilityFilter, setAvailabilityFilter] = useState('');
+  const [verifiedOnly, setVerifiedOnly] = useState(false);
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
 
-  const loadData = async () => {
+  const [professionals, setProfessionals] = useState<ProfessionalProfile[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [serviceError, setServiceError] = useState<string | null>(null);
+
+  const loadData = useCallback(async () => {
     setLoading(true);
-    const [profs, comps, supps] = await Promise.all([
-      RealApiClient.getProfessionals(),
-      RealApiClient.getCompanies(),
-      RealApiClient.getSuppliers(),
-    ]);
-    setProfessionals(profs);
-    setCompanies(comps);
-    setSuppliers(supps);
+    setServiceError(null);
+
+    const res = await RealApiClient.getProfessionals({
+      q: searchQuery.trim() || undefined,
+      city: cityFilter.trim() || undefined,
+      projectType: projectTypeFilter || undefined,
+      style: styleFilter || undefined,
+      investmentRange: investmentFilter || undefined,
+      availability: availabilityFilter || undefined,
+      verifiedOnly: verifiedOnly || undefined,
+      limit: 30,
+    });
+
+    if (!res.ok) {
+      setServiceError(res.error || 'Não foi possível consultar o catálogo de arquitetos no momento.');
+      setProfessionals([]);
+    } else {
+      const items = res.data?.items || [];
+      setProfessionals(items);
+      if (items.length > 0 && (searchQuery || cityFilter || projectTypeFilter || styleFilter)) {
+        trackEvent('architect_found', { count: items.length, city: cityFilter || undefined });
+      }
+    }
     setLoading(false);
-  };
+  }, [searchQuery, cityFilter, projectTypeFilter, styleFilter, investmentFilter, availabilityFilter, verifiedOnly]);
 
   useEffect(() => {
-    loadData();
-  }, []);
+    const timer = setTimeout(() => {
+      void loadData();
+    }, 200);
+    return () => clearTimeout(timer);
+  }, [loadData]);
 
-  const handleOpenWhatsApp = (e: React.MouseEvent, item: any) => {
-    e.stopPropagation();
-    const rawNumber = item.whatsapp || item.phone || '5511987654321';
-    const cleanNumber = rawNumber.replace(/\D/g, '');
-    const fullNumber = cleanNumber.startsWith('55') ? cleanNumber : `55${cleanNumber}`;
-    const text = encodeURIComponent(`Olá ${item.name}, encontrei seu perfil no ecossistema Ballast e gostaria de solicitar um orçamento para minha obra.`);
-    window.open(`https://wa.me/${fullNumber}?text=${text}`, '_blank');
+  const hasActiveFilters = Boolean(
+    searchQuery || cityFilter || projectTypeFilter || styleFilter || investmentFilter || availabilityFilter || verifiedOnly
+  );
+
+  const clearFilters = () => {
+    setSearchQuery('');
+    setCityFilter('');
+    setProjectTypeFilter('');
+    setStyleFilter('');
+    setInvestmentFilter('');
+    setAvailabilityFilter('');
+    setVerifiedOnly(false);
   };
 
-  // Filter items
-  const filterItem = (item: any) => {
-    const q = searchQuery.toLowerCase();
-    const matchesSearch = 
-      !q ||
-      item.name.toLowerCase().includes(q) ||
-      (item.profession && item.profession.toLowerCase().includes(q)) ||
-      (item.specialty && item.specialty.toLowerCase().includes(q)) ||
-      (item.category && item.category.toLowerCase().includes(q)) ||
-      (item.services && item.services.some((s: string) => s.toLowerCase().includes(q))) ||
-      (item.productTypes && item.productTypes.some((p: string) => p.toLowerCase().includes(q))) ||
-      (item.city && item.city.toLowerCase().includes(q));
-
-    const matchesCity = selectedCity === 'todas' || item.city.toLowerCase().includes(selectedCity.toLowerCase());
-
-    return matchesSearch && matchesCity;
-  };
-
-  const filteredProfs = professionals.filter(filterItem);
-  const filteredComps = companies.filter(filterItem);
-  const filteredSupps = suppliers.filter(filterItem);
-
-  const totalResults = 
-    (activeTab === 'all' ? (filteredProfs.length + filteredComps.length + filteredSupps.length) :
-     activeTab === 'professionals' ? filteredProfs.length :
-     activeTab === 'companies' ? filteredComps.length : filteredSupps.length);
+  const compareIds = new Set(compareList.map((p) => p.id));
 
   return (
-    <div style={{ maxWidth: '920px', margin: '0 auto', padding: '24px 16px' }}>
-      
-      {/* Header Banner */}
-      <div style={{ marginBottom: '20px' }}>
-        <h2 style={{ fontSize: '22px', fontWeight: 800, color: '#0F172A', letterSpacing: '-0.02em' }}>
-          Catálogo de Profissionais, Construtoras & Fornecedores
-        </h2>
-        <p style={{ fontSize: '13px', color: '#64748B', marginTop: '4px' }}>
-          Conecte-se com engenheiros calculistas, arquitetos, empreiteiras e distribuidoras de materiais com registro técnico ativo.
-        </p>
-      </div>
-
-      {/* Tabs */}
-      <div style={{
-        display: 'flex',
-        gap: '6px',
-        overflowX: 'auto',
-        borderBottom: '1px solid #E2E8F0',
-        paddingBottom: '8px',
-        marginBottom: '16px'
-      }}>
-        <button 
-          onClick={() => setActiveTab('all')} 
-          className={`btn ${activeTab === 'all' ? 'primary' : 'ghost'}`}
-          style={{ fontSize: '12px', padding: '7px 14px' }}
-        >
-          Todos ({professionals.length + companies.length + suppliers.length})
-        </button>
-        <button 
-          onClick={() => setActiveTab('professionals')} 
-          className={`btn ${activeTab === 'professionals' ? 'primary' : 'ghost'}`}
-          style={{ fontSize: '12px', padding: '7px 14px', gap: '5px' }}
-        >
-          <HardHat size={14} /> Profissionais ({professionals.length})
-        </button>
-        <button 
-          onClick={() => setActiveTab('companies')} 
-          className={`btn ${activeTab === 'companies' ? 'primary' : 'ghost'}`}
-          style={{ fontSize: '12px', padding: '7px 14px', gap: '5px' }}
-        >
-          <Building2 size={14} /> Construtoras ({companies.length})
-        </button>
-        <button 
-          onClick={() => setActiveTab('suppliers')} 
-          className={`btn ${activeTab === 'suppliers' ? 'primary' : 'ghost'}`}
-          style={{ fontSize: '12px', padding: '7px 14px', gap: '5px' }}
-        >
-          <Truck size={14} /> Fornecedores ({suppliers.length})
-        </button>
-      </div>
-
-      {/* Search & Location Bar */}
-      <div style={{ display: 'grid', gridTemplateColumns: '2.5fr 1fr', gap: '10px', marginBottom: '16px' }}>
-        <div style={{ position: 'relative' }}>
-          <Search size={15} color="#94A3B8" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
-          <input 
-            type="text" 
-            className="input-field" 
-            placeholder="Buscar por nome, especialidade ou produto (ex: laudo, fundações, concreto)..."
-            style={{ paddingLeft: '34px', fontSize: '13px' }}
-            value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
-          />
-        </div>
-        <div style={{ position: 'relative' }}>
-          <MapPin size={15} color="#94A3B8" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
-          <select 
-            className="input-field" 
-            style={{ paddingLeft: '34px', background: '#FFFFFF', fontSize: '13px', cursor: 'pointer' }}
-            value={selectedCity}
-            onChange={e => setSelectedCity(e.target.value)}
-          >
-            <option value="todas">Todas as Cidades</option>
-            <option value="São Paulo">São Paulo - SP</option>
-            <option value="Curitiba">Curitiba - PR</option>
-            <option value="Campinas">Campinas - SP</option>
-            <option value="Guarulhos">Guarulhos - SP</option>
-          </select>
-        </div>
-      </div>
-
-      {/* Results Count & Quick Tags */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', fontSize: '12px', color: '#64748B' }}>
-        <span>{totalResults} perfis técnicos encontrados</span>
-        <div style={{ display: 'flex', gap: '6px' }}>
-          <span className="chip" onClick={() => setSearchQuery('Estrutural')}>Estrutural</span>
-          <span className="chip" onClick={() => setSearchQuery('Concreto')}>Concreto</span>
-          <span className="chip" onClick={() => setSearchQuery('Arquitetura')}>Arquitetura</span>
-        </div>
-      </div>
-
-      {/* Cards List */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-        
-        {/* Render Professionals */}
-        {(activeTab === 'all' || activeTab === 'professionals') && filteredProfs.map(prof => (
-          <div 
-            key={prof.id} 
-            className="card" 
-            onClick={() => onOpenProfile(prof)} 
-            style={{
-              padding: '16px',
-              borderRadius: '14px',
-              cursor: 'pointer',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '12px'
-            }}
-          >
-            <div style={{ display: 'flex', gap: '14px', alignItems: 'flex-start' }}>
-              <img 
-                src={prof.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150'} 
-                alt={prof.name} 
-                style={{ width: '56px', height: '56px', borderRadius: '12px', objectFit: 'cover', border: '1px solid #E2E8F0' }} 
-              />
-
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <h4 style={{ fontSize: '15px', fontWeight: 700, color: '#0F172A' }}>{prof.name}</h4>
-                    {prof.isVerified && (
-                      <span className="badge verified" style={{ fontSize: '10px' }}>
-                        <ShieldCheck size={11} /> Verificado
-                      </span>
-                    )}
-                  </div>
-                  
-                  <button 
-                    onClick={(e) => { e.stopPropagation(); onToggleFavorite(prof); }}
-                    className="btn ghost" 
-                    style={{ padding: '6px', borderRadius: '50%', color: favoriteIds.has(prof.id) ? '#EA580C' : '#94A3B8' }}
-                  >
-                    <Heart size={14} fill={favoriteIds.has(prof.id) ? '#EA580C' : 'none'} />
-                  </button>
-                </div>
-
-                <div style={{ fontSize: '12.5px', color: '#2563EB', fontWeight: 600, marginTop: '2px' }}>
-                  {prof.profession} • {prof.specialty}
-                </div>
-
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', alignItems: 'center', marginTop: '6px', fontSize: '12px', color: '#64748B' }}>
-                  <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    <MapPin size={13} color="#94A3B8" /> {prof.city}, {prof.state}
-                  </span>
-                  <span style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#D97706', fontWeight: 600 }}>
-                    <Star size={13} fill="#D97706" /> {prof.rating} ({prof.reviewsCount} avaliações)
-                  </span>
-                  {prof.creaCauNumber && (
-                    <span style={{ background: '#F1F5F9', padding: '2px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: 600, color: '#334155' }}>
-                      {prof.creaCauNumber}
-                    </span>
-                  )}
-                </div>
-
-                {prof.services && prof.services.length > 0 && (
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '10px' }}>
-                    {prof.services.map((srv, idx) => (
-                      <span key={idx} className="badge" style={{ fontSize: '11px' }}>
-                        ✓ {srv}
-                      </span>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Actions Bar */}
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              paddingTop: '12px',
-              borderTop: '1px solid #F1F5F9',
-              marginTop: '4px'
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11.5px', color: '#059669', fontWeight: 600 }}>
-                <span className="pulse-dot"></span>
-                <span>Disponível para novos projetos</span>
-              </div>
-
-              <div style={{ display: 'flex', gap: '8px' }}>
-                <button 
-                  onClick={(e) => handleOpenWhatsApp(e, prof)}
-                  className="btn primary" 
-                  style={{ background: '#059669', borderColor: '#059669', fontSize: '11.5px', padding: '6px 12px' }}
-                >
-                  <Phone size={12} /> WhatsApp
-                </button>
-                <button 
-                  onClick={(e) => { e.stopPropagation(); onRequestQuote(prof); }}
-                  className="btn accent" 
-                  style={{ fontSize: '11.5px', padding: '6px 14px' }}
-                >
-                  <FileText size={12} /> Orçamento
-                </button>
-              </div>
-            </div>
+    <div className="ballast-container" style={{ paddingTop: '32px', paddingBottom: '48px' }}>
+      {/* Editorial Header */}
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'flex-end',
+          flexWrap: 'wrap',
+          gap: '16px',
+          marginBottom: '24px',
+        }}
+      >
+        <div style={{ maxWidth: '640px' }}>
+          <div className="meta-label" style={{ color: 'var(--azul-lastro)', marginBottom: '8px' }}>
+            CATÁLOGO DE ARQUITETURA · BALLAST
           </div>
-        ))}
+          <h1 style={{ fontSize: 'clamp(28px, 4vw, 42px)', marginBottom: '8px' }}>
+            Encontre arquitetos compatíveis
+          </h1>
+          <p style={{ fontSize: '14.5px', color: 'var(--steel)' }}>
+            Filtre por cidade, tipo de projeto, estilo arquitetônico, faixa de investimento e disponibilidade.
+          </p>
+        </div>
 
-        {/* Render Companies */}
-        {(activeTab === 'all' || activeTab === 'companies') && filteredComps.map(comp => (
-          <div 
-            key={comp.id} 
-            className="card" 
-            onClick={() => onOpenProfile(comp)} 
-            style={{
-              padding: '16px',
-              borderRadius: '14px',
-              cursor: 'pointer',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '12px'
-            }}
-          >
-            <div style={{ display: 'flex', gap: '14px', alignItems: 'flex-start' }}>
-              <img 
-                src={comp.avatar || 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=150'} 
-                alt={comp.name} 
-                style={{ width: '56px', height: '56px', borderRadius: '12px', objectFit: 'cover', border: '1px solid #E2E8F0' }} 
-              />
+        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+          <button type="button" onClick={onOpenBriefing} className="btn ghost">
+            <Sparkles size={15} />
+            {briefing ? 'Editar meu briefing' : 'Personalizar por briefing'}
+          </button>
+          {compareList.length > 0 && (
+            <button type="button" onClick={onOpenCompare} className="btn primary">
+              <Scale size={15} /> Comparar ({compareList.length}/3)
+            </button>
+          )}
+        </div>
+      </div>
 
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <h4 style={{ fontSize: '15px', fontWeight: 700, color: '#0F172A' }}>{comp.name}</h4>
-                    <span className="badge" style={{ fontSize: '10px' }}>
-                      <Building2 size={11} /> Construtora
-                    </span>
-                  </div>
-                  
-                  <button 
-                    onClick={(e) => { e.stopPropagation(); onToggleFavorite(comp); }}
-                    className="btn ghost" 
-                    style={{ padding: '6px', borderRadius: '50%', color: favoriteIds.has(comp.id) ? '#EA580C' : '#94A3B8' }}
-                  >
-                    <Heart size={14} fill={favoriteIds.has(comp.id) ? '#EA580C' : 'none'} />
-                  </button>
-                </div>
-
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', alignItems: 'center', marginTop: '6px', fontSize: '12px', color: '#64748B' }}>
-                  <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    <MapPin size={13} color="#94A3B8" /> {comp.city}, {comp.state}
-                  </span>
-                  <span style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#D97706', fontWeight: 600 }}>
-                    <Star size={13} fill="#D97706" /> {comp.rating} ({comp.reviewsCount} obras)
-                  </span>
-                  <span style={{ background: '#F1F5F9', padding: '2px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: 600, color: '#334155' }}>
-                    CNPJ: {comp.cnpj}
-                  </span>
-                </div>
-
-                {comp.services && comp.services.length > 0 && (
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '10px' }}>
-                    {comp.services.map((srv, idx) => (
-                      <span key={idx} className="badge" style={{ fontSize: '11px' }}>
-                        ✓ {srv}
-                      </span>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              paddingTop: '12px',
-              borderTop: '1px solid #F1F5F9',
-              marginTop: '4px'
-            }}>
-              <span style={{ fontSize: '11.5px', color: '#64748B' }}>
-                Turn-Key & Empreitada Global
+      {/* Active Briefing Context Strip */}
+      {briefing && (
+        <div
+          style={{
+            background: 'var(--azul-lastro-soft)',
+            border: '1px solid #C4D6E2',
+            borderRadius: 'var(--radius-md)',
+            padding: '14px 18px',
+            marginBottom: '20px',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: '12px',
+          }}
+        >
+          <div style={{ fontSize: '13.5px', color: 'var(--grafite)' }}>
+            <strong>Briefing ativo:</strong>{' '}
+            {[briefing.projectType, briefing.city && `${briefing.city}/${briefing.state}`, briefing.budgetRange]
+              .filter(Boolean)
+              .join(' · ') || 'Preferências salvas'}{' '}
+            {briefing.stylePreferences.length > 0 && (
+              <span style={{ color: 'var(--azul-lastro)', fontWeight: 600 }}>
+                · Estilos: {briefing.stylePreferences.join(', ')}
               </span>
+            )}
+          </div>
+          <button type="button" onClick={onOpenBriefing} className="btn ghost" style={{ padding: '6px 12px', minHeight: '32px', fontSize: '12.5px' }}>
+            Ajustar briefing
+          </button>
+        </div>
+      )}
 
-              <div style={{ display: 'flex', gap: '8px' }}>
-                <button 
-                  onClick={(e) => handleOpenWhatsApp(e, comp)}
-                  className="btn primary" 
-                  style={{ background: '#059669', borderColor: '#059669', fontSize: '11.5px', padding: '6px 12px' }}
-                >
-                  <Phone size={12} /> WhatsApp
-                </button>
-                <button 
-                  onClick={(e) => { e.stopPropagation(); onRequestQuote(comp); }}
-                  className="btn accent" 
-                  style={{ fontSize: '11.5px', padding: '6px 14px' }}
-                >
-                  <FileText size={12} /> Solicitar Proposta
-                </button>
-              </div>
+      {/* Search & Filter Panel */}
+      <section aria-label="Filtros do catálogo" className="card" style={{ padding: '18px', marginBottom: '24px' }}>
+        <div
+          className="responsive-2col"
+          style={{ display: 'grid', gridTemplateColumns: '1.8fr 1fr auto', gap: '12px', alignItems: 'end' }}
+        >
+          <div>
+            <label htmlFor="catalog-search">Buscar profissional, especialidade ou serviço</label>
+            <div style={{ position: 'relative' }}>
+              <Search
+                size={16}
+                color="#546168"
+                style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}
+              />
+              <input
+                id="catalog-search"
+                type="search"
+                placeholder="Ex: arquitetura residencial, reforma, minimalista, São Paulo..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                style={{ paddingLeft: '36px' }}
+              />
             </div>
           </div>
-        ))}
 
-        {/* Render Suppliers */}
-        {(activeTab === 'all' || activeTab === 'suppliers') && filteredSupps.map(supp => (
-          <div 
-            key={supp.id} 
-            className="card" 
-            onClick={() => onOpenProfile(supp)} 
+          <div>
+            <label htmlFor="catalog-city">Cidade ou região</label>
+            <div style={{ position: 'relative' }}>
+              <MapPin
+                size={16}
+                color="#546168"
+                style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}
+              />
+              <input
+                id="catalog-city"
+                type="text"
+                placeholder="Ex: São Paulo, Curitiba..."
+                value={cityFilter}
+                onChange={(e) => setCityFilter(e.target.value)}
+                style={{ paddingLeft: '36px' }}
+              />
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setShowAdvancedFilters((v) => !v)}
+            className="btn ghost"
+            aria-expanded={showAdvancedFilters}
+          >
+            <SlidersHorizontal size={15} />
+            Filtros
+          </button>
+        </div>
+
+        {/* Advanced Architectural Filters */}
+        {showAdvancedFilters && (
+          <div
             style={{
-              padding: '16px',
-              borderRadius: '14px',
-              cursor: 'pointer',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '12px'
+              marginTop: '16px',
+              paddingTop: '16px',
+              borderTop: '1px solid var(--border-color)',
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+              gap: '12px',
             }}
           >
-            <div style={{ display: 'flex', gap: '14px', alignItems: 'flex-start' }}>
-              <img 
-                src={supp.avatar || 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=150'} 
-                alt={supp.name} 
-                style={{ width: '56px', height: '56px', borderRadius: '12px', objectFit: 'cover', border: '1px solid #E2E8F0' }} 
-              />
-
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <h4 style={{ fontSize: '15px', fontWeight: 700, color: '#0F172A' }}>{supp.name}</h4>
-                    <span className="badge" style={{ fontSize: '10px' }}>
-                      <Truck size={11} /> {supp.category}
-                    </span>
-                  </div>
-                  
-                  <button 
-                    onClick={(e) => { e.stopPropagation(); onToggleFavorite(supp); }}
-                    className="btn ghost" 
-                    style={{ padding: '6px', borderRadius: '50%', color: favoriteIds.has(supp.id) ? '#EA580C' : '#94A3B8' }}
-                  >
-                    <Heart size={14} fill={favoriteIds.has(supp.id) ? '#EA580C' : 'none'} />
-                  </button>
-                </div>
-
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', alignItems: 'center', marginTop: '6px', fontSize: '12px', color: '#64748B' }}>
-                  <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    <MapPin size={13} color="#94A3B8" /> {supp.city}, {supp.state}
-                  </span>
-                  <span style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#D97706', fontWeight: 600 }}>
-                    <Star size={13} fill="#D97706" /> {supp.rating} ({supp.reviewsCount} entregas)
-                  </span>
-                  {supp.deliveryAvailable && (
-                    <span style={{ color: '#059669', fontWeight: 600, fontSize: '11px' }}>
-                      🚚 Entrega no Canteiro
-                    </span>
-                  )}
-                </div>
-
-                {supp.productTypes && supp.productTypes.length > 0 && (
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '10px' }}>
-                    {supp.productTypes.map((prod, idx) => (
-                      <span key={idx} className="badge verified" style={{ fontSize: '11px' }}>
-                        📦 {prod}
-                      </span>
-                    ))}
-                  </div>
-                )}
-              </div>
+            <div>
+              <label htmlFor="filter-project-type">Tipo de projeto</label>
+              <select
+                id="filter-project-type"
+                value={projectTypeFilter}
+                onChange={(e) => setProjectTypeFilter(e.target.value)}
+              >
+                <option value="">Todos os tipos</option>
+                {PROJECT_TYPES.map((t) => (
+                  <option key={t} value={t}>{t}</option>
+                ))}
+              </select>
             </div>
 
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              paddingTop: '12px',
-              borderTop: '1px solid #F1F5F9',
-              marginTop: '4px'
-            }}>
-              <span style={{ fontSize: '11.5px', color: '#64748B' }}>
-                Fornecimento Direto de Fábrica / Distribuidor
-              </span>
-
-              <div style={{ display: 'flex', gap: '8px' }}>
-                <button 
-                  onClick={(e) => handleOpenWhatsApp(e, supp)}
-                  className="btn primary" 
-                  style={{ background: '#059669', borderColor: '#059669', fontSize: '11.5px', padding: '6px 12px' }}
-                >
-                  <Phone size={12} /> WhatsApp
-                </button>
-                <button 
-                  onClick={(e) => { e.stopPropagation(); onRequestQuote(supp); }}
-                  className="btn accent" 
-                  style={{ fontSize: '11.5px', padding: '6px 14px' }}
-                >
-                  <Truck size={12} /> Cotar Materiais
-                </button>
-              </div>
+            <div>
+              <label htmlFor="filter-style">Estilo arquitetônico</label>
+              <select id="filter-style" value={styleFilter} onChange={(e) => setStyleFilter(e.target.value)}>
+                <option value="">Todos os estilos</option>
+                {ARCHITECTURAL_STYLES.map((s) => (
+                  <option key={s} value={s}>{s}</option>
+                ))}
+              </select>
             </div>
-          </div>
-        ))}
 
-        {totalResults === 0 && !loading && (
-          <div className="card" style={{ padding: '48px 24px', textAlign: 'center', background: '#FFFFFF', borderRadius: '14px' }}>
-            <Search size={32} color="#94A3B8" style={{ margin: '0 auto 10px' }} />
-            <h4 style={{ fontSize: '15px', fontWeight: 700, color: '#0F172A' }}>Nenhum resultado encontrado</h4>
-            <p style={{ fontSize: '12.5px', color: '#64748B', marginTop: '4px' }}>
-              Tente buscar por termos mais genéricos como "cimento", "estrutural", "projeto" ou selecione "Todas as Cidades".
-            </p>
+            <div>
+              <label htmlFor="filter-investment">Faixa de investimento</label>
+              <select
+                id="filter-investment"
+                value={investmentFilter}
+                onChange={(e) => setInvestmentFilter(e.target.value)}
+              >
+                <option value="">Qualquer faixa</option>
+                {INVESTMENT_RANGES.map((r) => (
+                  <option key={r} value={r}>{r}</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label htmlFor="filter-availability">Disponibilidade</label>
+              <select
+                id="filter-availability"
+                value={availabilityFilter}
+                onChange={(e) => setAvailabilityFilter(e.target.value)}
+              >
+                <option value="">Qualquer disponibilidade</option>
+                <option value="disponivel">Disponível</option>
+                <option value="agenda_limitada">Agenda limitada</option>
+                <option value="lista_espera">Lista de espera</option>
+              </select>
+            </div>
           </div>
         )}
 
-      </div>
+        {/* Quick Chips + Verified Toggle */}
+        <div
+          style={{
+            marginTop: '14px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: '10px',
+          }}
+        >
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+            {PROJECT_TYPES.slice(0, 4).map((t) => (
+              <button
+                key={t}
+                type="button"
+                className={`chip ${projectTypeFilter === t ? 'on' : ''}`}
+                onClick={() => setProjectTypeFilter(projectTypeFilter === t ? '' : t)}
+              >
+                {t}
+              </button>
+            ))}
+            <button
+              type="button"
+              className={`chip ${verifiedOnly ? 'on' : ''}`}
+              onClick={() => setVerifiedOnly((v) => !v)}
+            >
+              <ShieldCheck size={13} /> Apenas registro verificado
+            </button>
+          </div>
 
+          {hasActiveFilters && (
+            <button
+              type="button"
+              onClick={clearFilters}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: 'var(--azul-lastro)',
+                fontWeight: 600,
+                fontSize: '12.5px',
+                cursor: 'pointer',
+                textDecoration: 'underline',
+              }}
+            >
+              Limpar filtros
+            </button>
+          )}
+        </div>
+      </section>
+
+      {/* Results Status Header */}
+      {!loading && !serviceError && (
+        <div style={{ marginBottom: '16px', fontSize: '13px', color: 'var(--steel)', display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
+          <span>
+            {professionals.length === 1
+              ? '1 profissional encontrado'
+              : `${professionals.length} profissionais encontrados`}
+          </span>
+          <span>Selecione até 3 perfis para comparar lado a lado</span>
+        </div>
+      )}
+
+      {/* Loading State */}
+      {loading && (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '20px' }}>
+          {[1, 2, 3].map((n) => (
+            <div key={n} className="card" style={{ padding: '24px', minHeight: '260px', opacity: 0.65 }}>
+              <div style={{ height: '18px', width: '55%', background: 'var(--paper)', borderRadius: '4px', marginBottom: '12px' }} />
+              <div style={{ height: '14px', width: '40%', background: 'var(--paper)', borderRadius: '4px', marginBottom: '18px' }} />
+              <div style={{ height: '90px', width: '100%', background: 'var(--paper)', borderRadius: '6px' }} />
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Explicit Service Unavailable State (NEVER show fake mock data!) */}
+      {!loading && serviceError && (
+        <div
+          role="alert"
+          className="card"
+          style={{
+            padding: '40px 24px',
+            textAlign: 'center',
+            borderColor: '#FECDCA',
+            background: 'var(--color-danger-light)',
+          }}
+        >
+          <AlertTriangle size={32} color="#B42318" style={{ margin: '0 auto 12px' }} />
+          <h2 style={{ fontSize: '22px', marginBottom: '8px', color: 'var(--grafite)' }}>
+            Serviço temporariamente indisponível
+          </h2>
+          <p style={{ fontSize: '14px', color: 'var(--text-body)', maxWidth: '480px', margin: '0 auto 20px' }}>
+            {serviceError}
+          </p>
+          <button type="button" onClick={loadData} className="btn primary">
+            <RefreshCw size={15} /> Tentar novamente
+          </button>
+        </div>
+      )}
+
+      {/* Genuine Empty State */}
+      {!loading && !serviceError && professionals.length === 0 && (
+        <div className="card" style={{ padding: '52px 24px', textAlign: 'center' }}>
+          <Search size={32} color="#546168" style={{ margin: '0 auto 12px' }} />
+          <h2 style={{ fontSize: '24px', marginBottom: '8px' }}>
+            {hasActiveFilters ? 'Nenhum arquiteto encontrado com estes filtros' : 'Catálogo pronto para receber profissionais'}
+          </h2>
+          <p style={{ fontSize: '14px', color: 'var(--steel)', maxWidth: '480px', margin: '0 auto 22px' }}>
+            {hasActiveFilters
+              ? 'Experimente ampliar a cidade, remover alguns filtros ou ajustar seu briefing.'
+              : 'Os primeiros arquitetos e escritórios estão publicando seus perfis reais na Ballast. Você é profissional de arquitetura?'}
+          </p>
+          <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap' }}>
+            {hasActiveFilters && (
+              <button type="button" onClick={clearFilters} className="btn primary">
+                Limpar filtros
+              </button>
+            )}
+            <button type="button" onClick={onArchitectSignup} className="btn ghost">
+              <UserPlus size={15} /> Cadastrar perfil profissional
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Editorial Architect Result Cards (Inspired by PDF Page 11) */}
+      {!loading && !serviceError && professionals.length > 0 && (
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
+            gap: '20px',
+          }}
+        >
+          {professionals.map((prof) => {
+            const avail = formatAvailability(prof.availability);
+            const matchReasons = getCompatibilityReasons(prof, briefing);
+            const isFav = favoriteIds.has(prof.id);
+            const isCompared = compareIds.has(prof.id);
+            const coverPhoto = prof.portfolioPreview?.[0]?.mediaUrls?.[0];
+            const initials = prof.name
+              .split(' ')
+              .filter(Boolean)
+              .slice(0, 2)
+              .map((s) => s[0]?.toUpperCase())
+              .join('');
+
+            return (
+              <article
+                key={prof.id}
+                className="card"
+                style={{
+                  overflow: 'hidden',
+                  display: 'flex',
+                  flexDirection: 'column',
+                }}
+              >
+                {/* Cover or Profile Header Strip */}
+                {coverPhoto && (
+                  <div
+                    onClick={() => onOpenArchitectPage(prof)}
+                    style={{ height: '164px', overflow: 'hidden', cursor: 'pointer', background: 'var(--grafite)' }}
+                  >
+                    <img
+                      src={coverPhoto}
+                      alt={`Projeto de ${prof.name}`}
+                      loading="lazy"
+                      decoding="async"
+                      style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                    />
+                  </div>
+                )}
+
+                <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '12px', flex: 1 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px' }}>
+                    <div style={{ display: 'flex', gap: '12px', alignItems: 'center', minWidth: 0 }}>
+                      {prof.avatar ? (
+                        <img
+                          src={prof.avatar}
+                          alt={prof.name}
+                          loading="lazy"
+                          style={{
+                            width: '52px',
+                            height: '52px',
+                            borderRadius: 'var(--radius-sm)',
+                            objectFit: 'cover',
+                            border: '1px solid var(--border-color)',
+                            flexShrink: 0,
+                          }}
+                        />
+                      ) : (
+                        <div
+                          style={{
+                            width: '52px',
+                            height: '52px',
+                            borderRadius: 'var(--radius-sm)',
+                            background: 'var(--azul-lastro)',
+                            color: '#FFFFFF',
+                            fontFamily: 'var(--font-display)',
+                            fontSize: '18px',
+                            fontWeight: 600,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            flexShrink: 0,
+                          }}
+                        >
+                          {initials}
+                        </div>
+                      )}
+
+                      <div style={{ minWidth: 0 }}>
+                        <h3
+                          onClick={() => onOpenArchitectPage(prof)}
+                          style={{
+                            fontSize: '20px',
+                            cursor: 'pointer',
+                            marginBottom: '2px',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          {prof.name}
+                        </h3>
+                        <div style={{ fontSize: '13px', color: 'var(--azul-lastro)', fontWeight: 600 }}>
+                          {prof.specialty || prof.profession}
+                        </div>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => onToggleFavorite(prof)}
+                      aria-label={isFav ? `Remover ${prof.name} dos salvos` : `Salvar ${prof.name}`}
+                      style={{
+                        background: 'var(--bg-subtle)',
+                        border: '1px solid var(--border-color)',
+                        borderRadius: '50%',
+                        width: '34px',
+                        height: '34px',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        cursor: 'pointer',
+                        color: isFav ? 'var(--azul-lastro)' : 'var(--steel)',
+                        flexShrink: 0,
+                      }}
+                    >
+                      <Heart size={15} fill={isFav ? '#2F5872' : 'none'} />
+                    </button>
+                  </div>
+
+                  {/* Location & Clear Credential Distinction */}
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center', fontSize: '12.5px', color: 'var(--steel)' }}>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                      <MapPin size={13} /> {prof.city}, {prof.state}
+                    </span>
+
+                    {prof.isVerified ? (
+                      <span className="badge verified">
+                        <ShieldCheck size={12} /> {prof.creaCauNumber ? `${prof.creaCauNumber} · Verificado` : 'Verificado'}
+                      </span>
+                    ) : prof.creaCauNumber ? (
+                      <span className="badge declared">Registro declarado: {prof.creaCauNumber}</span>
+                    ) : null}
+                  </div>
+
+                  {/* Bio excerpt */}
+                  {prof.bio && (
+                    <p
+                      style={{
+                        fontSize: '13.5px',
+                        color: 'var(--text-body)',
+                        lineHeight: 1.55,
+                        display: '-webkit-box',
+                        WebkitLineClamp: 2,
+                        WebkitBoxOrient: 'vertical',
+                        overflow: 'hidden',
+                        margin: 0,
+                      }}
+                    >
+                      {prof.bio}
+                    </p>
+                  )}
+
+                  {/* Styles / Project Types */}
+                  {(prof.styles?.length > 0 || prof.projectTypes?.length > 0) && (
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                      {[...(prof.projectTypes || []).slice(0, 2), ...(prof.styles || []).slice(0, 2)].map((tag, idx) => (
+                        <span key={`${tag}-${idx}`} className="badge" style={{ fontSize: '11px' }}>
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Transparent Compatibility Explanation */}
+                  {matchReasons.length > 0 && (
+                    <div
+                      style={{
+                        background: 'var(--bg-subtle)',
+                        borderLeft: '3px solid var(--azul-lastro)',
+                        padding: '10px 12px',
+                        borderRadius: '0 var(--radius-xs) var(--radius-xs) 0',
+                      }}
+                    >
+                      <div style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--azul-lastro)', marginBottom: '4px' }}>
+                        Por que combina com seu briefing
+                      </div>
+                      <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '3px', fontSize: '12px', color: 'var(--grafite)' }}>
+                        {matchReasons.map((r) => (
+                          <li key={r} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <Check size={12} color="#2F5872" /> {r}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {/* Availability + Actions */}
+                  <div
+                    style={{
+                      marginTop: 'auto',
+                      paddingTop: '14px',
+                      borderTop: '1px solid var(--border-color)',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '10px',
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px' }}>
+                      <span
+                        style={{
+                          fontWeight: 600,
+                          color:
+                            avail.tone === 'success'
+                              ? 'var(--color-success)'
+                              : avail.tone === 'warn'
+                              ? 'var(--color-warn)'
+                              : 'var(--steel)',
+                        }}
+                      >
+                        {avail.label}
+                      </span>
+                      {prof.experienceYears > 0 && (
+                        <span style={{ color: 'var(--steel)' }}>{prof.experienceYears} anos de atuação</span>
+                      )}
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <button
+                        type="button"
+                        onClick={() => onOpenArchitectPage(prof)}
+                        className="btn primary"
+                        style={{ flex: 1, fontSize: '13px', padding: '8px 14px' }}
+                      >
+                        Ver perfil <ArrowRight size={14} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => onToggleCompare(prof)}
+                        className="btn ghost"
+                        style={{
+                          padding: '8px 12px',
+                          fontSize: '12.5px',
+                          borderColor: isCompared ? 'var(--azul-lastro)' : undefined,
+                          background: isCompared ? 'var(--azul-lastro-soft)' : undefined,
+                          color: isCompared ? 'var(--azul-lastro)' : undefined,
+                        }}
+                        title={isCompared ? 'Remover da comparação' : 'Comparar profissional'}
+                      >
+                        <Scale size={14} />
+                        {isCompared ? 'Na lista' : 'Comparar'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </article>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 };

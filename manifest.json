@@ -1,16 +1,16 @@
 {
-  "short_name": "ALICERCE",
-  "name": "ALICERCE | Plataforma B2B2C da Construção Civil",
+  "short_name": "Ballast",
+  "name": "Ballast Architecture",
   "icons": [
     {
-      "src": "/favicon.ico",
-      "sizes": "64x64 32x32 24x24 16x16",
-      "type": "image/x-icon"
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
     }
   ],
   "start_url": "/",
-  "background_color": "#0F172A",
-  "theme_color": "#539DC4",
+  "background_color": "#F3F0E8",
+  "theme_color": "#2F5872",
   "display": "standalone",
-  "description": "Rede Social B2B2C e Marketplace para a Indústria da Construção Civil no Brasil."
+  "description": "Ballast Architecture — Conectando pessoas que desejam construir ou reformar a arquitetos compatíveis."
 }

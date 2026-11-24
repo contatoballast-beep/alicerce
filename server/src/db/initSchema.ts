@@ -1,8 +1,16 @@
 import { db } from './turso.js';
 import bcrypt from 'bcryptjs';
 
+async function safeAlter(sql: string) {
+  try {
+    await db.execute(sql);
+  } catch {
+    // Column already exists
+  }
+}
+
 export async function initSchema() {
-  console.log('[Turso DB] Inicializando Schema Completo do Ecossistema ALICERCE...');
+  console.log('[Ballast DB] Inicializando schema relacional Ballast Architecture...');
 
   const schemaSql = `
     CREATE TABLE IF NOT EXISTS users (
@@ -33,15 +41,19 @@ export async function initSchema() {
       user_id TEXT UNIQUE NOT NULL,
       profession TEXT NOT NULL,
       specialty TEXT NOT NULL,
-      experience_years INTEGER DEFAULT 5,
+      experience_years INTEGER DEFAULT 0,
       bio TEXT,
       services TEXT,
+      styles TEXT,
+      project_types TEXT,
+      investment_ranges TEXT,
+      service_area TEXT,
       serves_pf INTEGER DEFAULT 1,
       serves_pj INTEGER DEFAULT 1,
       crea_cau_number TEXT,
       whatsapp TEXT,
       phone TEXT,
-      rating REAL DEFAULT 5.0,
+      rating REAL DEFAULT 0,
       reviews_count INTEGER DEFAULT 0,
       availability TEXT DEFAULT 'disponivel',
       city TEXT NOT NULL,
@@ -54,7 +66,7 @@ export async function initSchema() {
       user_id TEXT UNIQUE NOT NULL,
       company_name TEXT NOT NULL,
       trade_name TEXT,
-      cnpj TEXT NOT NULL,
+      cnpj TEXT,
       categories TEXT,
       services TEXT,
       region_served TEXT,
@@ -62,7 +74,7 @@ export async function initSchema() {
       whatsapp TEXT,
       website TEXT,
       description TEXT,
-      rating REAL DEFAULT 5.0,
+      rating REAL DEFAULT 0,
       reviews_count INTEGER DEFAULT 0,
       city TEXT NOT NULL,
       state TEXT NOT NULL,
@@ -82,7 +94,7 @@ export async function initSchema() {
       website TEXT,
       description TEXT,
       region_served TEXT,
-      rating REAL DEFAULT 5.0,
+      rating REAL DEFAULT 0,
       reviews_count INTEGER DEFAULT 0,
       city TEXT NOT NULL,
       state TEXT NOT NULL,
@@ -103,7 +115,13 @@ export async function initSchema() {
       user_id TEXT NOT NULL,
       title TEXT NOT NULL,
       description TEXT,
+      context TEXT,
       category TEXT,
+      project_type TEXT,
+      city TEXT,
+      state TEXT,
+      year TEXT,
+      photo_credit TEXT,
       media_urls TEXT,
       budget REAL,
       completion_date TEXT,
@@ -136,6 +154,14 @@ export async function initSchema() {
       created_at TEXT NOT NULL
     );
 
+    CREATE TABLE IF NOT EXISTS post_likes (
+      id TEXT PRIMARY KEY,
+      post_id TEXT NOT NULL,
+      user_id TEXT NOT NULL,
+      created_at TEXT NOT NULL,
+      UNIQUE(post_id, user_id)
+    );
+
     CREATE TABLE IF NOT EXISTS opportunities (
       id TEXT PRIMARY KEY,
       owner_id TEXT NOT NULL,
@@ -152,7 +178,9 @@ export async function initSchema() {
       deadline_days INTEGER DEFAULT 30,
       deadline_date TEXT,
       photos_urls TEXT,
-      demand_type TEXT DEFAULT 'projeto_obra',
+      demand_type TEXT DEFAULT 'projeto_arquitetonico',
+      current_stage TEXT,
+      style_preferences TEXT,
       status TEXT DEFAULT 'aberta',
       proposals_count INTEGER DEFAULT 0,
       created_at TEXT NOT NULL
@@ -172,6 +200,27 @@ export async function initSchema() {
       attachment_url TEXT,
       status TEXT DEFAULT 'pendente',
       created_at TEXT NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS proposal_requests (
+      id TEXT PRIMARY KEY,
+      client_id TEXT NOT NULL,
+      client_name TEXT NOT NULL,
+      architect_id TEXT NOT NULL,
+      architect_name TEXT NOT NULL,
+      thread_id TEXT,
+      project_type TEXT NOT NULL,
+      city TEXT NOT NULL,
+      state TEXT NOT NULL,
+      budget_range TEXT,
+      timeline TEXT,
+      current_stage TEXT,
+      description TEXT NOT NULL,
+      style_preferences TEXT,
+      status TEXT DEFAULT 'enviada',
+      architect_response TEXT,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
     );
 
     CREATE TABLE IF NOT EXISTS quote_requests (
@@ -225,6 +274,9 @@ export async function initSchema() {
       participant_two_avatar TEXT,
       participant_one_role TEXT,
       participant_two_role TEXT,
+      project_title TEXT,
+      opportunity_id TEXT,
+      proposal_request_id TEXT,
       last_message TEXT,
       last_message_time TEXT,
       created_at TEXT NOT NULL,
@@ -233,7 +285,8 @@ export async function initSchema() {
 
     CREATE TABLE IF NOT EXISTS messages (
       id TEXT PRIMARY KEY,
-      thread_id TEXT,
+      thread_id TEXT NOT NULL,
+      client_message_id TEXT,
       sender_id TEXT NOT NULL,
       sender_name TEXT NOT NULL,
       receiver_id TEXT NOT NULL,
@@ -281,9 +334,11 @@ export async function initSchema() {
     CREATE TABLE IF NOT EXISTS reports (
       id TEXT PRIMARY KEY,
       reporter_id TEXT NOT NULL,
+      reporter_name TEXT,
       target_type TEXT NOT NULL,
       target_id TEXT NOT NULL,
       reason TEXT NOT NULL,
+      details TEXT,
       status TEXT DEFAULT 'pendente',
       created_at TEXT NOT NULL
     );
@@ -309,345 +364,115 @@ export async function initSchema() {
       duration_days INTEGER NOT NULL,
       impressions_count INTEGER DEFAULT 0,
       clicks_count INTEGER DEFAULT 0,
-      status TEXT DEFAULT 'ativa',
+      status TEXT DEFAULT 'aguardando_pagamento',
       payment_method TEXT NOT NULL,
       pix_qr_code TEXT,
       pix_copia_cola TEXT,
       invoice_nfse_url TEXT,
       created_at TEXT NOT NULL
     );
+
+    CREATE TABLE IF NOT EXISTS telemetry_events (
+      id TEXT PRIMARY KEY,
+      event_name TEXT NOT NULL,
+      user_id TEXT,
+      path TEXT,
+      metadata TEXT,
+      created_at TEXT NOT NULL
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+    CREATE INDEX IF NOT EXISTS idx_users_role ON users(role);
+    CREATE INDEX IF NOT EXISTS idx_prof_user ON professional_profiles(user_id);
+    CREATE INDEX IF NOT EXISTS idx_prof_city ON professional_profiles(city);
+    CREATE INDEX IF NOT EXISTS idx_portfolio_user ON portfolio_items(user_id);
+    CREATE INDEX IF NOT EXISTS idx_msg_thread_created ON messages(thread_id, created_at);
+    CREATE INDEX IF NOT EXISTS idx_msg_client_id ON messages(thread_id, client_message_id);
+    CREATE INDEX IF NOT EXISTS idx_conv_p1 ON conversations(participant_one_id);
+    CREATE INDEX IF NOT EXISTS idx_conv_p2 ON conversations(participant_two_id);
+    CREATE INDEX IF NOT EXISTS idx_quotes_req ON quote_requests(requester_id);
+    CREATE INDEX IF NOT EXISTS idx_quotes_sup ON quote_requests(supplier_id);
+    CREATE INDEX IF NOT EXISTS idx_prop_req_client ON proposal_requests(client_id);
+    CREATE INDEX IF NOT EXISTS idx_prop_req_arch ON proposal_requests(architect_id);
+    CREATE INDEX IF NOT EXISTS idx_fav_user ON favorites(user_id);
   `;
 
   try {
     await db.executeMultiple(schemaSql);
-    console.log('[Turso DB] Schema SQL criado com sucesso!');
 
-    // Check if initial seeding is needed
-    const checkUsers = await db.execute("SELECT COUNT(*) as cnt FROM users");
-    const count = Number(checkUsers.rows[0].cnt);
+    // Safe additive migrations for existing databases
+    await safeAlter("ALTER TABLE professional_profiles ADD COLUMN styles TEXT");
+    await safeAlter("ALTER TABLE professional_profiles ADD COLUMN project_types TEXT");
+    await safeAlter("ALTER TABLE professional_profiles ADD COLUMN investment_ranges TEXT");
+    await safeAlter("ALTER TABLE professional_profiles ADD COLUMN service_area TEXT");
+    await safeAlter("ALTER TABLE portfolio_items ADD COLUMN context TEXT");
+    await safeAlter("ALTER TABLE portfolio_items ADD COLUMN project_type TEXT");
+    await safeAlter("ALTER TABLE portfolio_items ADD COLUMN city TEXT");
+    await safeAlter("ALTER TABLE portfolio_items ADD COLUMN state TEXT");
+    await safeAlter("ALTER TABLE portfolio_items ADD COLUMN year TEXT");
+    await safeAlter("ALTER TABLE portfolio_items ADD COLUMN photo_credit TEXT");
+    await safeAlter("ALTER TABLE conversations ADD COLUMN participant_one_avatar TEXT");
+    await safeAlter("ALTER TABLE conversations ADD COLUMN participant_two_avatar TEXT");
+    await safeAlter("ALTER TABLE conversations ADD COLUMN participant_one_role TEXT");
+    await safeAlter("ALTER TABLE conversations ADD COLUMN participant_two_role TEXT");
+    await safeAlter("ALTER TABLE conversations ADD COLUMN project_title TEXT");
+    await safeAlter("ALTER TABLE conversations ADD COLUMN opportunity_id TEXT");
+    await safeAlter("ALTER TABLE conversations ADD COLUMN proposal_request_id TEXT");
+    await safeAlter("ALTER TABLE messages ADD COLUMN client_message_id TEXT");
+    await safeAlter("ALTER TABLE opportunities ADD COLUMN current_stage TEXT");
+    await safeAlter("ALTER TABLE opportunities ADD COLUMN style_preferences TEXT");
+    await safeAlter("ALTER TABLE reports ADD COLUMN reporter_name TEXT");
+    await safeAlter("ALTER TABLE reports ADD COLUMN details TEXT");
 
-    if (count === 0) {
-      console.log('[Turso DB] Inserindo dados essenciais de demonstração operacional...');
-      const passHash = await bcrypt.hash('alicerce2026', 10);
+    // Seed reference taxonomy (categories only — no fake users, no fake ads, no hardcoded passwords)
+    const catCheck = await db.execute("SELECT COUNT(*) as cnt FROM categories");
+    if (Number(catCheck.rows[0].cnt) === 0) {
       const now = new Date().toISOString();
-
-      // 1. Admin
-      await db.execute({
-        sql: `INSERT INTO users (id, name, email, password_hash, role, crea_cau_number, phone, whatsapp, city, state, bio, avatar, is_verified, verification_status, consent_lgpd, plan, created_at)
-              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 'admin', ?)`,
-        args: [
-          'usr_admin',
-          'Gestor ALICERCE',
-          'admin@alicerce.com.br',
-          passHash,
-          'admin',
-          'CREA-BR 000001/D',
-          '(11) 99999-0000',
-          '5511999990000',
-          'São Paulo',
-          'SP',
-          'Administrador Geral da Plataforma ALICERCE.',
-          'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-          1,
-          'verified',
-          now
-        ]
-      });
-
-      // 2. Professional (Engineer)
-      await db.execute({
-        sql: `INSERT INTO users (id, name, email, password_hash, role, crea_cau_number, phone, whatsapp, city, state, bio, avatar, is_verified, verification_status, consent_lgpd, plan, created_at)
-              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 'pro', ?)`,
-        args: [
-          'usr_curr',
-          'Eng. Roberto Silva',
-          'roberto.silva@alicerce.com.br',
-          passHash,
-          'profissional_crea',
-          'CREA-SP 5069824/D',
-          '(11) 98765-4321',
-          '5511987654321',
-          'São Paulo',
-          'SP',
-          'Engenheiro Civil especialista em estruturas de concreto e laudos técnicos periciais com 12 anos de experiência.',
-          'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=150&auto=format&fit=crop&q=80',
-          1,
-          'verified',
-          now
-        ]
-      });
-
-      await db.execute({
-        sql: `INSERT INTO professional_profiles (id, user_id, profession, specialty, experience_years, bio, services, serves_pf, serves_pj, crea_cau_number, whatsapp, phone, rating, reviews_count, availability, city, state, created_at)
-              VALUES (?, ?, ?, ?, ?, ?, ?, 1, 1, ?, ?, ?, 4.9, 18, 'disponivel', ?, ?, ?)`,
-        args: [
-          'prof_1',
-          'usr_curr',
-          'Engenheiro Civil',
-          'Cálculo Estrutural & Laudos',
-          12,
-          'Especialista em projetos executivos estruturais, reforço de estruturas e laudos técnicos com ART.',
-          JSON.stringify(['Cálculo Estrutural', 'Laudo Técnico com ART', 'Vistoria Predial', 'Acompanhamento de Obras']),
-          'CREA-SP 5069824/D',
-          '5511987654321',
-          '(11) 98765-4321',
-          'São Paulo',
-          'SP',
-          now
-        ]
-      });
-
-      // 3. Architect
-      await db.execute({
-        sql: `INSERT INTO users (id, name, email, password_hash, role, crea_cau_number, phone, whatsapp, city, state, bio, avatar, is_verified, verification_status, consent_lgpd, plan, created_at)
-              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 'pro', ?)`,
-        args: [
-          'usr_camila',
-          'Arqª. Camila Torres',
-          'camila.torres@alicerce.com.br',
-          passHash,
-          'profissional_cau',
-          'CAU A99182-0',
-          '(41) 98877-6655',
-          '5541988776655',
-          'Curitiba',
-          'PR',
-          'Arquiteta e Urbanista com foco em arquitetura residencial contemporânea e interiores sustentáveis.',
-          'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80',
-          1,
-          'verified',
-          now
-        ]
-      });
-
-      await db.execute({
-        sql: `INSERT INTO professional_profiles (id, user_id, profession, specialty, experience_years, bio, services, serves_pf, serves_pj, crea_cau_number, whatsapp, phone, rating, reviews_count, availability, city, state, created_at)
-              VALUES (?, ?, ?, ?, ?, ?, ?, 1, 1, ?, ?, ?, 5.0, 24, 'disponivel', ?, ?, ?)`,
-        args: [
-          'prof_2',
-          'usr_camila',
-          'Arquiteta & Urbanista',
-          'Projetos Residenciais & Interiores',
-          8,
-          'Desenvolvimento de projetos arquitetônicos completos, maquetes 3D e aprovação em prefeitura.',
-          JSON.stringify(['Projeto Arquitetônico', 'Design de Interiores', 'Aprovação em Prefeitura', 'Modelagem 3D']),
-          'CAU A99182-0',
-          '5541988776655',
-          '(41) 98877-6655',
-          'Curitiba',
-          'PR',
-          now
-        ]
-      });
-
-      // 4. Company (Construtora)
-      await db.execute({
-        sql: `INSERT INTO users (id, name, email, password_hash, role, cnpj_number, phone, whatsapp, city, state, bio, avatar, is_verified, verification_status, consent_lgpd, plan, created_at)
-              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 'empresa_pro', ?)`,
-        args: [
-          'usr_construtora',
-          'Vanguard Construtora & Engenharia LTDA',
-          'contato@vanguard.com.br',
-          passHash,
-          'empresa_cnpj',
-          '33.910.402/0001-12',
-          '(11) 3344-5566',
-          '5511977778888',
-          'São Paulo',
-          'SP',
-          'Construtora e empreiteira focada em obras comerciais, galpões industriais e condomínios de alto padrão.',
-          'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=150&auto=format&fit=crop&q=80',
-          1,
-          'verified',
-          now
-        ]
-      });
-
-      await db.execute({
-        sql: `INSERT INTO company_profiles (id, user_id, company_name, trade_name, cnpj, categories, services, region_served, phone, whatsapp, website, description, rating, reviews_count, city, state, created_at)
-              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 4.8, 31, ?, ?, ?)`,
-        args: [
-          'comp_1',
-          'usr_construtora',
-          'Vanguard Construtora e Engenharia LTDA',
-          'Vanguard Obras',
-          '33.910.402/0001-12',
-          JSON.stringify(['Construção Civil', 'Estruturas', 'Reformas Corporativas']),
-          JSON.stringify(['Turn-Key', 'Edificações Residenciais', 'Galpões Industriais', 'Terraplanagem']),
-          'Grande São Paulo, Campinas e Litoral',
-          '(11) 3344-5566',
-          '5511977778888',
-          'https://vanguardobras.com.br',
-          'Empresa especializada em execução de obras com gestão técnica completa e cumprimento rigoroso de prazos.',
-          'São Paulo',
-          'SP',
-          now
-        ]
-      });
-
-      // 5. Supplier (Fornecedor de Materiais)
-      await db.execute({
-        sql: `INSERT INTO users (id, name, email, password_hash, role, cnpj_number, phone, whatsapp, city, state, bio, avatar, is_verified, verification_status, consent_lgpd, plan, created_at)
-              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 'fornecedor_pro', ?)`,
-        args: [
-          'usr_fornecedor',
-          'Polimix Concreto & Materiais Básicos',
-          'vendas@polimixalicerce.com.br',
-          passHash,
-          'fornecedor',
-          '12.345.678/0001-90',
-          '(11) 4004-9000',
-          '5511988889999',
-          'São Paulo',
-          'SP',
-          'Distribuidor líder de cimento, concreto usinado, blocos estruturais e aço para construção civil.',
-          'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=150&auto=format&fit=crop&q=80',
-          1,
-          'verified',
-          now
-        ]
-      });
-
-      await db.execute({
-        sql: `INSERT INTO supplier_profiles (id, user_id, company_name, cnpj, category, product_types, delivery_available, phone, whatsapp, website, description, region_served, rating, reviews_count, city, state, created_at)
-              VALUES (?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?, ?, 4.9, 52, ?, ?, ?)`,
-        args: [
-          'supp_1',
-          'usr_fornecedor',
-          'Polimix Concreto & Materiais Básicos',
-          '12.345.678/0001-90',
-          'Cimento, Concreto & Blocos',
-          JSON.stringify(['Cimento CP-II / CP-IV', 'Concreto Usinado FCK 25/30/40', 'Bloco Estrutural 14x19x39', 'Aço CA-50 / CA-60', 'Areia Média e Brita 1']),
-          '(11) 4004-9000',
-          '5511988889999',
-          'https://polimixmateriais.com.br',
-          'Fornecimento de materiais pesados para obras civis com entrega pontual de caminhão betoneira e caçamba.',
-          'São Paulo, ABC e Região Metropolitana',
-          'São Paulo',
-          'SP',
-          now
-        ]
-      });
-
-      // 6. Posts (Purge legacy mock posts)
-      await db.execute("DELETE FROM posts WHERE id IN ('post_1', 'post_2', 'post_3')");
-
-      // 7. Opportunities & Proposals (Purge legacy mock entries)
-      await db.execute("DELETE FROM opportunities WHERE id IN ('opp_1', 'opp_2')");
-      await db.execute("DELETE FROM proposals WHERE id IN ('prop_1', 'prop_101', 'prop_102')");
-
-      // 9. Categories
       const categoriesSeed = [
-        ['cat_1', 'Projetos de Arquitetura', 'arquitetura', 'service', 'Compass'],
-        ['cat_2', 'Projetos Estruturais & Fundações', 'estrutural', 'service', 'Building2'],
-        ['cat_3', 'Instalações Elétricas & Hidráulicas', 'instalacoes', 'service', 'Zap'],
-        ['cat_4', 'Alvenaria, Reformas & Construção', 'alvenaria', 'service', 'Hammer'],
-        ['cat_5', 'Cimento, Areia, Brita & Concreto', 'concreto-agregados', 'material', 'Truck'],
-        ['cat_6', 'Aço, Armaduras & Estruturas Metálicas', 'aco-metal', 'material', 'Boxes'],
-        ['cat_7', 'Locação de Máquinas & Equipamentos', 'locacao-maquinas', 'material', 'Wrench'],
-        ['cat_8', 'Pisos, Revestimentos & Acabamento', 'acabamento', 'material', 'Layers']
+        ['cat_1', 'Arquitetura Residencial', 'arquitetura-residencial', 'project', 'Home'],
+        ['cat_2', 'Reformas & Retrofit', 'reformas-retrofit', 'project', 'Hammer'],
+        ['cat_3', 'Arquitetura de Interiores', 'interiores', 'project', 'Layers'],
+        ['cat_4', 'Arquitetura Comercial & Corporativa', 'comercial', 'project', 'Building2'],
+        ['cat_5', 'Paisagismo & Áreas Externas', 'paisagismo', 'project', 'Trees'],
+        ['cat_6', 'Arquitetura Sustentável', 'sustentavel', 'project', 'Leaf'],
+        ['cat_7', 'Projetos Complementares & Engenharia', 'engenharia-complementar', 'service', 'Compass'],
+        ['cat_8', 'Consultoria & Viabilidade de Terreno', 'viabilidade', 'service', 'MapPin']
       ];
-
       for (const cat of categoriesSeed) {
         await db.execute({
-          sql: `INSERT INTO categories (id, name, slug, type, icon, created_at) VALUES (?, ?, ?, ?, ?, ?)`,
+          sql: `INSERT OR IGNORE INTO categories (id, name, slug, type, icon, created_at) VALUES (?, ?, ?, ?, ?, ?)`,
           args: [cat[0], cat[1], cat[2], cat[3], cat[4], now]
         });
       }
-
-      // 10. Initial Active Ad Campaigns
-      await db.execute({
-        sql: `INSERT INTO ad_campaigns (id, user_id, title, objective, target_region, daily_budget, total_budget, duration_days, impressions_count, clicks_count, status, payment_method, pix_qr_code, pix_copia_cola, invoice_nfse_url, created_at)
-              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'ativa', 'pix', ?, ?, ?, ?)`,
-        args: [
-          'camp_1',
-          'usr_fornecedor',
-          'Polimix Concreto - Entrega Expressa de Concreto Usinado fck 30 MPa com Bomba em SP',
-          'Venda Direta de Materiais',
-          'São Paulo e Região Metropolitana',
-          80,
-          1120,
-          14,
-          1840,
-          94,
-          'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=00020126580014BR.GOV.BCB.PIX',
-          '00020126580014BR.GOV.BCB.PIX0136alicerce-pay@bancopix.com.br5204000053039865401120.005802BR5916ALICERCE ADS6009SAO PAULO62070503***6304ABCD',
-          'NFS-e_ALICERCE_882910.pdf',
-          new Date().toLocaleDateString('pt-BR')
-        ]
-      });
-
-      await db.execute({
-        sql: `INSERT INTO ad_campaigns (id, user_id, title, objective, target_region, daily_budget, total_budget, duration_days, impressions_count, clicks_count, status, payment_method, pix_qr_code, pix_copia_cola, invoice_nfse_url, created_at)
-              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'ativa', 'pix', ?, ?, ?, ?)`,
-        args: [
-          'camp_2',
-          'usr_construtora',
-          'Vanguard Construtora - Contratação de Empreiteiras Hidráulica e Elétrica para Edifícios',
-          'Captação de Leads e Obras',
-          'São Paulo e Campinas - SP',
-          60,
-          840,
-          14,
-          1250,
-          68,
-          'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=00020126580014BR.GOV.BCB.PIX',
-          '00020126580014BR.GOV.BCB.PIX0136alicerce-pay@bancopix.com.br520400005303986540840.005802BR5916ALICERCE ADS6009SAO PAULO62070503***6304WXYZ',
-          'NFS-e_ALICERCE_991823.pdf',
-          new Date().toLocaleDateString('pt-BR')
-        ]
-      });
     }
 
-    // Safe Migrations for conversations columns
-    try {
-      await db.execute("ALTER TABLE conversations ADD COLUMN participant_one_avatar TEXT");
-    } catch(e) {}
-    try {
-      await db.execute("ALTER TABLE conversations ADD COLUMN participant_two_avatar TEXT");
-    } catch(e) {}
-    try {
-      await db.execute("ALTER TABLE conversations ADD COLUMN participant_one_role TEXT");
-    } catch(e) {}
-    try {
-      await db.execute("ALTER TABLE conversations ADD COLUMN participant_two_role TEXT");
-    } catch(e) {}
+    // Remove legacy insecure demo admin / mock accounts if present from older seeds
+    await db.execute("DELETE FROM users WHERE id IN ('usr_admin', 'usr_rhuan_admin') AND email IN ('admin@alicerce.com.br', 'rhuangumbi@gmail.com') AND crea_cau_number = 'CREA-BR 000001/D'");
+    await db.execute("DELETE FROM ad_campaigns WHERE id IN ('camp_1', 'camp_2') AND pix_copia_cola LIKE '%alicerce-pay@bancopix.com.br%'");
 
-    // Ensure rhuangumbi@gmail.com is registered as Admin
-    try {
-      const checkRhuan = await db.execute({
-        sql: "SELECT id FROM users WHERE LOWER(email) = LOWER(?)",
-        args: ['rhuangumbi@gmail.com']
+    // Optional secure admin bootstrap ONLY when explicitly configured via environment variables
+    const bootstrapEmail = process.env.BOOTSTRAP_ADMIN_EMAIL?.trim().toLowerCase();
+    const bootstrapPassword = process.env.BOOTSTRAP_ADMIN_PASSWORD;
+    if (bootstrapEmail && bootstrapPassword && bootstrapPassword.length >= 12) {
+      const existing = await db.execute({
+        sql: "SELECT id FROM users WHERE LOWER(email) = ?",
+        args: [bootstrapEmail]
       });
-
-      const passHash = await bcrypt.hash('alicerce2026', 10);
-      const now = new Date().toISOString();
-
-      if (checkRhuan.rows.length === 0) {
+      if (existing.rows.length === 0) {
+        const hash = await bcrypt.hash(bootstrapPassword, 12);
+        const now = new Date().toISOString();
         await db.execute({
-          sql: `INSERT INTO users (id, name, email, password_hash, role, crea_cau_number, phone, whatsapp, city, state, bio, avatar, is_verified, verification_status, consent_lgpd, plan, created_at)
-                VALUES (?, ?, ?, ?, 'admin', 'CREA-BR 000001/D', '(11) 99999-9999', '5511999999999', 'São Paulo', 'SP', 'Administrador Geral da Plataforma ALICERCE.', 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80', 1, 'verified', 1, 'admin', ?)`,
-          args: [
-            'usr_rhuan_admin',
-            'Rhuan Gumbi',
-            'rhuangumbi@gmail.com',
-            passHash,
-            now
-          ]
+          sql: `INSERT INTO users (id, name, email, password_hash, role, city, state, is_verified, verification_status, consent_lgpd, plan, created_at)
+                VALUES (?, 'Administração Ballast', ?, ?, 'admin', 'São Paulo', 'SP', 1, 'verified', 1, 'admin', ?)`,
+          args: [`usr_admin_${Date.now()}`, bootstrapEmail, hash, now]
         });
-        console.log('[Turso DB] Usuário rhuangumbi@gmail.com criado com privilégios de Admin.');
-      } else {
-        await db.execute({
-          sql: "UPDATE users SET role = 'admin', is_verified = 1, verification_status = 'verified', plan = 'admin' WHERE LOWER(email) = LOWER(?)",
-          args: ['rhuangumbi@gmail.com']
-        });
-        console.log('[Turso DB] Usuário rhuangumbi@gmail.com promovido para Admin com sucesso.');
+        console.log('[Ballast DB] Conta administrativa inicial provisionada via variáveis de ambiente.');
       }
-    } catch (e) {
-      console.error('[Turso DB] Erro ao configurar admin rhuangumbi@gmail.com:', e);
     }
 
+    console.log('[Ballast DB] Schema pronto.');
   } catch (err) {
-    console.error('[Turso DB] Erro ao inicializar schema:', err);
+    console.error('[Ballast DB] Erro ao inicializar schema:', err);
+    throw err;
   }
 }

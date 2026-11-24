@@ -1,14 +1,28 @@
-export type UserRole = 
+export type UserRole =
   | 'cliente'
-  | 'pessoa_fisica' 
+  | 'pessoa_fisica'
   | 'profissional'
-  | 'profissional_crea' 
-  | 'profissional_cau' 
+  | 'profissional_crea'
+  | 'profissional_cau'
   | 'empresa'
-  | 'empresa_cnpj' 
+  | 'empresa_cnpj'
   | 'fornecedor'
-  | 'investidor' 
+  | 'investidor'
   | 'admin';
+
+export type VerificationStatus = 'unverified' | 'declared' | 'verified';
+
+export interface ProfessionalDetails {
+  profession: string;
+  specialty: string;
+  experienceYears: number;
+  services: string[];
+  styles: string[];
+  projectTypes: string[];
+  investmentRanges: string[];
+  serviceArea: string;
+  availability: 'disponivel' | 'agenda_limitada' | 'lista_espera' | string;
+}
 
 export interface UserProfile {
   id: string;
@@ -17,36 +31,52 @@ export interface UserProfile {
   role: UserRole;
   avatar: string;
   bio?: string;
-  creaCauNumber?: string; // Ex: CREA-SP 5069824/D or CAU A12345-6
-  cnpjNumber?: string;    // Ex: 12.345.678/0001-90
+  creaCauNumber?: string;
+  cnpjNumber?: string;
   phone?: string;
   whatsapp?: string;
   city: string;
   state: string;
   verified: boolean;
-  twoFactorEnabled?: boolean;
-  specialties?: string[];
-  portfolioCount?: number;
-  rating?: number;
-  reviewsCount?: number;
+  verificationStatus?: VerificationStatus;
   consentLgpd: boolean;
   plan?: string;
   createdAt: string;
+  professionalProfile?: ProfessionalDetails;
+}
+
+export interface PortfolioItem {
+  id: string;
+  userId?: string;
+  title: string;
+  description?: string;
+  context?: string;
+  category?: string;
+  projectType?: string;
+  city?: string;
+  state?: string;
+  year?: string;
+  photoCredit?: string;
+  mediaUrls: string[];
+  budget?: number;
+  createdAt?: string;
 }
 
 export interface ProfessionalProfile {
   id: string;
   userId?: string;
   name: string;
-  email?: string;
+  role?: UserRole;
   avatar: string;
   profession: string;
   specialty: string;
   experienceYears: number;
   services: string[];
+  styles: string[];
+  projectTypes: string[];
+  investmentRanges: string[];
+  serviceArea: string;
   creaCauNumber?: string;
-  phone?: string;
-  whatsapp?: string;
   bio?: string;
   city: string;
   state: string;
@@ -54,17 +84,19 @@ export interface ProfessionalProfile {
   reviewsCount: number;
   availability: string;
   isVerified: boolean;
+  verificationStatus: VerificationStatus;
+  portfolioPreview?: PortfolioItem[];
+  portfolio?: PortfolioItem[];
+  reviews?: ReviewItem[];
+  createdAt?: string;
 }
 
 export interface CompanyProfile {
   id: string;
   name: string;
   tradeName?: string;
-  cnpj: string;
   city: string;
   state: string;
-  phone?: string;
-  whatsapp?: string;
   website?: string;
   avatar?: string;
   categories: string[];
@@ -77,18 +109,49 @@ export interface CompanyProfile {
 export interface SupplierProfile {
   id: string;
   name: string;
-  cnpj?: string;
   category: string;
   productTypes: string[];
   deliveryAvailable: boolean;
   city: string;
   state: string;
-  phone?: string;
-  whatsapp?: string;
   website?: string;
   avatar?: string;
   rating: number;
   reviewsCount: number;
+  isVerified?: boolean;
+}
+
+export interface ClientBriefing {
+  projectType: string;
+  city: string;
+  state: string;
+  budgetRange: string;
+  timeline: string;
+  currentStage: string;
+  needs: string;
+  stylePreferences: string[];
+  roomPreferences: string[];
+}
+
+export interface ProposalRequest {
+  id: string;
+  clientId: string;
+  clientName: string;
+  architectId: string;
+  architectName: string;
+  threadId?: string;
+  projectType: string;
+  city: string;
+  state: string;
+  budgetRange?: string;
+  timeline?: string;
+  currentStage?: string;
+  description: string;
+  stylePreferences: string[];
+  status: 'enviada' | 'em_analise' | 'respondida' | 'recusada' | 'cancelada';
+  architectResponse?: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface QuoteItem {
@@ -132,15 +195,15 @@ export interface QuoteRequest {
 }
 
 export interface TechnicalStamp {
-  stampId: string; // Ex: ALC-2026-8849
-  registrationNumber: string; // CREA/CAU/CNPJ
+  stampId?: string;
+  registrationNumber: string;
   issueDate?: string;
-  hashVerification: string; // SHA-256 preview
-  artRrtCode?: string; // Ex: ART SP2026/099182
+  hashVerification?: string;
+  artRrtCode?: string;
   status: 'valid' | 'pending' | 'revoked';
 }
 
-export type PostCategory = 'obra_andamento' | 'oportunidade' | 'artigo_tecnico' | 'portfolio' | 'patrocinado';
+export type PostCategory = 'portfolio' | 'obra_andamento' | 'oportunidade' | 'artigo_tecnico' | 'patrocinado';
 
 export interface Post {
   id: string;
@@ -149,6 +212,7 @@ export interface Post {
   authorAvatar: string;
   authorRole: UserRole;
   authorBadge: string;
+  authorVerified?: boolean;
   category: PostCategory;
   title: string;
   content: string;
@@ -180,7 +244,7 @@ export interface Proposal {
   proposerRole: UserRole;
   proposerAvatar: string;
   creaCau?: string;
-  value: number; // R$
+  value: number;
   deadlineDays: number;
   scopeDescription: string;
   attachmentUrl?: string;
@@ -207,29 +271,33 @@ export interface Opportunity {
   ownerAvatar: string;
   status: OpportunityStatus;
   deadlineDays?: number;
+  currentStage?: string;
+  stylePreferences?: string[];
   proposalsCount: number;
   proposals: Proposal[];
   createdAt: string;
 }
 
-export type TimelinePhase = 
+export type TimelinePhase =
+  | 'Estudo Preliminar e Anteprojeto'
+  | 'Projeto Legal e Aprovação'
   | 'Fundação e Terraplanagem'
   | 'Estrutura e Concreto'
   | 'Alvenaria e Vedações'
   | 'Instalações Elétricas e Hidráulicas'
   | 'Revestimentos e Acabamento'
-  | 'Vistoria e Habite-se';
+  | 'Vistoria e Entrega';
 
 export interface ConstructionMilestone {
   id: string;
   phase: TimelinePhase;
-  progressPercent: number; // 0-100
+  progressPercent: number;
   title: string;
   description: string;
   photoUrls: string[];
   costIncurred: number;
   updatedAt: string;
-  responsibleCrea: string;
+  responsibleCrea?: string;
 }
 
 export interface ConstructionProject {
@@ -239,13 +307,16 @@ export interface ConstructionProject {
   totalBudget: number;
   overallProgress: number;
   responsavelTecnico: string;
-  creaNumber: string;
+  creaNumber?: string;
   milestones: ConstructionMilestone[];
 }
 
+export type ChatMessageStatus = 'sending' | 'sent' | 'failed' | 'read';
+
 export interface ChatMessage {
   id: string;
-  threadId?: string;
+  threadId: string;
+  clientMessageId?: string;
   senderId: string;
   senderName: string;
   receiverId: string;
@@ -253,6 +324,8 @@ export interface ChatMessage {
   attachmentUrl?: string;
   timestamp: string;
   read: boolean;
+  status?: ChatMessageStatus;
+  createdAt?: string;
 }
 
 export interface ChatThread {
@@ -261,9 +334,14 @@ export interface ChatThread {
   participantName: string;
   participantAvatar: string;
   participantRole: string;
+  participantVerified?: boolean;
+  projectTitle?: string;
+  opportunityId?: string;
+  proposalRequestId?: string;
   lastMessage: string;
   lastMessageTime: string;
   unreadCount: number;
+  updatedAt?: string;
 }
 
 export interface FavoriteItem {
@@ -293,7 +371,7 @@ export interface AdCampaign {
   id: string;
   userId: string;
   title: string;
-  objective: 'Destaque de Perfil' | 'Destaque de Obra' | 'Captação de Leads';
+  objective: string;
   targetAudience?: string[];
   targetRegion: string;
   dailyBudget: number;
@@ -305,21 +383,20 @@ export interface AdCampaign {
   paymentMethod: 'pix' | 'cartao';
   pixQrCode?: string;
   pixCopiaCola?: string;
-  pixCopiaECola?: string;
   invoiceNfseUrl?: string;
   createdAt: string;
 }
 
-export interface ModerationItem {
+export interface ReportItem {
   id: string;
-  type: 'post' | 'user' | 'proposal';
-  targetId: string;
-  title: string;
-  authorName: string;
+  reporter_id: string;
+  reporter_name?: string;
+  target_type: string;
+  target_id: string;
   reason: string;
-  reportsCount: number;
-  status: 'pendente' | 'aprovado' | 'removido';
-  createdAt: string;
+  details?: string;
+  status: 'pendente' | 'aprovado' | 'removido' | 'resolvido';
+  created_at: string;
 }
 
 export interface AdminMetrics {
@@ -330,5 +407,14 @@ export interface AdminMetrics {
   totalOpportunities: number;
   totalProposals: number;
   totalReviews: number;
+  pendingReports?: number;
   platformHealth: string;
+}
+
+export interface ApiResult<T> {
+  ok: boolean;
+  data?: T;
+  error?: string;
+  status?: number;
+  offline?: boolean;
 }
