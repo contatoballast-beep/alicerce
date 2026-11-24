@@ -20,9 +20,13 @@ import {
 } from '../types';
 
 const getApiBaseUrl = (): string => {
-  const envUrl = import.meta.env.VITE_API_URL?.trim();
-  if (envUrl) {
-    return envUrl.replace(/\/+$/, '');
+  const rawEnv = import.meta.env.VITE_API_URL?.trim();
+  if (rawEnv) {
+    const cleaned = rawEnv.replace(/\/+$/, '');
+    if (cleaned.startsWith('http://') || cleaned.startsWith('https://') || cleaned.startsWith('/')) {
+      return cleaned;
+    }
+    return `https://${cleaned}`;
   }
   if (typeof window !== 'undefined') {
     const isDevPort = window.location.port === '3000' || window.location.port === '5173';

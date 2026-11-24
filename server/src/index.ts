@@ -68,24 +68,32 @@ app.use((_req, res, next) => {
   next();
 });
 
-app.use(
-  cors({
-    origin: (origin, callback) => {
-      if (!origin) return callback(null, true);
-      if (allowedOrigins.has(origin)) return callback(null, true);
-      if (process.env.ALLOW_VERCEL_PREVIEWS === 'true' && origin.endsWith('.vercel.app')) {
+const corsOptions: cors.CorsOptions = {
+  origin: (origin, callback) => {
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.has(origin)) return callback(null, true);
+    try {
+      const host = new URL(origin).hostname.toLowerCase();
+      if (
+        host === 'ballastarch.com' ||
+        host.endsWith('.ballastarch.com') ||
+        host.endsWith('.vercel.app') ||
+        host.endsWith('.onrender.com') ||
+        host === 'localhost' ||
+        host === '127.0.0.1'
+      ) {
         return callback(null, true);
       }
-      if (!IS_PROD && (origin.startsWith('http://localhost:') || origin.startsWith('http://127.0.0.1:'))) {
-        return callback(null, true);
-      }
-      return callback(new Error('Origem não autorizada pela política de CORS'));
-    },
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
-  })
-);
+    } catch {}
+    return callback(null, false);
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+};
+
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
 
 app.use(express.json({ limit: '1mb' }));
 
