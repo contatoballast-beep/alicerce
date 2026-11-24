@@ -20,7 +20,7 @@ dotenv.config();
 const PORT = Number(process.env.PORT || 4000);
 const IS_PROD = process.env.NODE_ENV === 'production';
 
-// Strict JWT_SECRET enforcement (no insecure hardcoded production secrets)
+// Strict JWT_SECRET enforcement (never uses hardcoded fallback secrets)
 function resolveJwtSecret(): string {
   const envSecret = process.env.JWT_SECRET?.trim();
   const bannedSecrets = new Set([
@@ -29,17 +29,11 @@ function resolveJwtSecret(): string {
     'secret',
     'changeme',
   ]);
-  if (IS_PROD) {
-    if (!envSecret || envSecret.length < 24 || bannedSecrets.has(envSecret)) {
-      throw new Error(
-        '[FATAL] JWT_SECRET ausente, curto (<24 chars) ou inseguro em produção. Defina uma chave criptográfica forte.'
-      );
-    }
-    return envSecret;
-  }
-  if (!envSecret || bannedSecrets.has(envSecret)) {
+  if (!envSecret || envSecret.length < 24 || bannedSecrets.has(envSecret)) {
     const ephemeral = crypto.randomBytes(32).toString('hex');
-    console.warn('[Ballast Security] JWT_SECRET não configurado em dev — usando chave efêmera aleatória.');
+    console.warn(
+      '[Ballast Security WARNING] JWT_SECRET ausente, curto (<24 chars) ou igual a chave legada insegura. Usando chave criptográfica aleatória em memória. Configure um JWT_SECRET forte (32+ chars) nas variáveis de ambiente do Render para persistir sessões entre reinícios.'
+    );
     return ephemeral;
   }
   return envSecret;

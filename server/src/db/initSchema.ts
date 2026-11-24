@@ -380,27 +380,12 @@ export async function initSchema() {
       metadata TEXT,
       created_at TEXT NOT NULL
     );
-
-    CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
-    CREATE INDEX IF NOT EXISTS idx_users_role ON users(role);
-    CREATE INDEX IF NOT EXISTS idx_prof_user ON professional_profiles(user_id);
-    CREATE INDEX IF NOT EXISTS idx_prof_city ON professional_profiles(city);
-    CREATE INDEX IF NOT EXISTS idx_portfolio_user ON portfolio_items(user_id);
-    CREATE INDEX IF NOT EXISTS idx_msg_thread_created ON messages(thread_id, created_at);
-    CREATE INDEX IF NOT EXISTS idx_msg_client_id ON messages(thread_id, client_message_id);
-    CREATE INDEX IF NOT EXISTS idx_conv_p1 ON conversations(participant_one_id);
-    CREATE INDEX IF NOT EXISTS idx_conv_p2 ON conversations(participant_two_id);
-    CREATE INDEX IF NOT EXISTS idx_quotes_req ON quote_requests(requester_id);
-    CREATE INDEX IF NOT EXISTS idx_quotes_sup ON quote_requests(supplier_id);
-    CREATE INDEX IF NOT EXISTS idx_prop_req_client ON proposal_requests(client_id);
-    CREATE INDEX IF NOT EXISTS idx_prop_req_arch ON proposal_requests(architect_id);
-    CREATE INDEX IF NOT EXISTS idx_fav_user ON favorites(user_id);
   `;
 
   try {
     await db.executeMultiple(schemaSql);
 
-    // Safe additive migrations for existing databases
+    // Safe additive migrations for existing databases (MUST run BEFORE creating indexes on new columns)
     await safeAlter("ALTER TABLE professional_profiles ADD COLUMN styles TEXT");
     await safeAlter("ALTER TABLE professional_profiles ADD COLUMN project_types TEXT");
     await safeAlter("ALTER TABLE professional_profiles ADD COLUMN investment_ranges TEXT");
@@ -424,6 +409,27 @@ export async function initSchema() {
     await safeAlter("ALTER TABLE reports ADD COLUMN reporter_name TEXT");
     await safeAlter("ALTER TABLE reports ADD COLUMN details TEXT");
 
+    // Indexes created safely AFTER additive column migrations
+    const indexes = [
+      "CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)",
+      "CREATE INDEX IF NOT EXISTS idx_users_role ON users(role)",
+      "CREATE INDEX IF NOT EXISTS idx_prof_user ON professional_profiles(user_id)",
+      "CREATE INDEX IF NOT EXISTS idx_prof_city ON professional_profiles(city)",
+      "CREATE INDEX IF NOT EXISTS idx_portfolio_user ON portfolio_items(user_id)",
+      "CREATE INDEX IF NOT EXISTS idx_msg_thread_created ON messages(thread_id, created_at)",
+      "CREATE INDEX IF NOT EXISTS idx_msg_client_id ON messages(thread_id, client_message_id)",
+      "CREATE INDEX IF NOT EXISTS idx_conv_p1 ON conversations(participant_one_id)",
+      "CREATE INDEX IF NOT EXISTS idx_conv_p2 ON conversations(participant_two_id)",
+      "CREATE INDEX IF NOT EXISTS idx_quotes_req ON quote_requests(requester_id)",
+      "CREATE INDEX IF NOT EXISTS idx_quotes_sup ON quote_requests(supplier_id)",
+      "CREATE INDEX IF NOT EXISTS idx_prop_req_client ON proposal_requests(client_id)",
+      "CREATE INDEX IF NOT EXISTS idx_prop_req_arch ON proposal_requests(architect_id)",
+      "CREATE INDEX IF NOT EXISTS idx_fav_user ON favorites(user_id)",
+    ];
+    for (const idxSql of indexes) {
+      await safeAlter(idxSql);
+    }
+
     // Seed reference taxonomy (categories only — no fake users, no fake ads, no hardcoded passwords)
     const catCheck = await db.execute("SELECT COUNT(*) as cnt FROM categories");
     if (Number(catCheck.rows[0].cnt) === 0) {
@@ -446,9 +452,13 @@ export async function initSchema() {
       }
     }
 
-    // Remove legacy insecure demo admin / mock accounts if present from older seeds
-    await db.execute("DELETE FROM users WHERE id IN ('usr_admin', 'usr_rhuan_admin') AND email IN ('admin@alicerce.com.br', 'rhuangumbi@gmail.com') AND crea_cau_number = 'CREA-BR 000001/D'");
-    await db.execute("DELETE FROM ad_campaigns WHERE id IN ('camp_1', 'camp_2') AND pix_copia_cola LIKE '%alicerce-pay@bancopix.com.br%'");
+    // Remove legacy insecure demo admin / mock accounts if present (non-fatal if FK referenced)
+    try {
+      await db.execute("DELETE FROM users WHERE id IN ('usr_admin', 'usr_rhuan_admin') AND email IN ('admin@alicerce.com.br', 'rhuangumbi@gmail.com') AND crea_cau_number = 'CREA-BR 000001/D'");
+      await db.execute("DELETE FROM ad_campaigns WHERE id IN ('camp_1', 'camp_2') AND pix_copia_cola LIKE '%alicerce-pay@bancopix.com.br%'");
+    } catch (cleanupErr) {
+      console.warn('[Ballast DB] Limpeza de registros legados ignorada:', cleanupErr);
+    }
 
     // Optional secure admin bootstrap ONLY when explicitly configured via environment variables
     const bootstrapEmail = process.env.BOOTSTRAP_ADMIN_EMAIL?.trim().toLowerCase();
