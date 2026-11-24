@@ -32,7 +32,7 @@
   ],
   "rewrites": [
     {
-      "source": "/((?!api/|assets/|favicon\\.png|favicon\\.svg|ballast-swan-dark\\.png|ballast-swan-white\\.png|manifest\\.json|robots\\.txt|sitemap\\.xml|ballast-logo\\.jpg).*)",
+      "source": "/((?!api/|assets/|favicon\\.ico|favicon\\.png|ballast-swan-dark\\.png|ballast-swan-white\\.png|manifest\\.json|robots\\.txt|sitemap\\.xml|ballast-logo\\.jpg).*)",
       "destination": "/index.html"
     }
   ]
